@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/solarpush/fX/compare/v1.1.1...v1.1.2) (2026-06-28)
+
+
+### Bug Fixes
+
+* **workflow:** 🛠️ add token configuration for release-please action ([aab7eb3](https://github.com/solarpush/fX/commit/aab7eb34cbbe941be399142d936f6c0b5267b797))
+* **workflow:** 🛠️ add token configuration for release-please action ([3ca825d](https://github.com/solarpush/fX/commit/3ca825db21206e571fb754a63bca5ce5a40e92d1))
+
 ## [1.1.1](https://github.com/solarpush/fX/compare/v1.1.0...v1.1.1) (2026-06-28)
 
 
