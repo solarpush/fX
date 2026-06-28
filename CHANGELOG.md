@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/solarpush/fX/compare/v1.0.0...v1.1.0) (2026-06-28)
+
+
+### Features
+
+* **dashboard:** ✨ enhance dashboard functionality and UI ([0e427ae](https://github.com/solarpush/fX/commit/0e427aef1da9807eaf4d8578c05cb3c74a766324))
+* **dashboard:** ✨ enhance dashboard functionality and UI ([0c0035a](https://github.com/solarpush/fX/commit/0c0035a497e03ebedc88301eca0464cf06b8bca7))
+* **generate-invoice:** ✨ improve invoice generation form and logic ([0c0035a](https://github.com/solarpush/fX/commit/0c0035a497e03ebedc88301eca0464cf06b8bca7))
+
+
+### Bug Fixes
+
+* **template-editor:** 🐛 fix UI inconsistencies and improve accessibility ([0c0035a](https://github.com/solarpush/fX/commit/0c0035a497e03ebedc88301eca0464cf06b8bca7))
+* **test55:** 🐛 correct capabilities order in test55.typ ([0c0035a](https://github.com/solarpush/fX/commit/0c0035a497e03ebedc88301eca0464cf06b8bca7))
+
 ## 1.0.0 (2026-06-28)
 
 
