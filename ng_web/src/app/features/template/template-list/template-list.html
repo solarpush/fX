@@ -1,11 +1,11 @@
 <div class="template-list">
   <header class="list-header">
     <h1>Templates Typst</h1>
-    <a routerLink="/templates/new" class="btn-primary"> ➕ Nouveau template </a>
+    <a routerLink="/templates/new" class="btn-primary"> Nouveau template </a>
   </header>
 
   @if (error()) {
-    <div class="error-message">❌ {{ error() }}</div>
+    <div class="error-message">{{ error() }}</div>
   }
 
   @if (isLoading()) {
@@ -15,63 +15,83 @@
     </div>
   } @else if (templates().length === 0) {
     <div class="empty-state">
-      <p>📄 Aucun template trouvé</p>
+      <p>Aucun template trouvé</p>
       <a routerLink="/templates/new" class="btn-primary">Créer votre premier template</a>
     </div>
   } @else {
-    <div class="templates-grid">
-      @for (template of templates(); track template.id) {
-        <div class="template-card">
-          <div class="card-header">
-            <div class="card-icon">📝</div>
-            <h3>{{ template.name }}</h3>
-            @if (template.isDefault) {
-              <span class="badge-default">⭐</span>
-            }
-          </div>
-
-          @if (template.description) {
-            <p class="card-description">{{ template.description }}</p>
+    <div class="table-container">
+      <table class="templates-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Description</th>
+            <th>Dernière modification</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (template of templates(); track template.id) {
+            <tr>
+              <td class="name-col">
+                <div class="name-wrapper">
+                  <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  </span>
+                  <span class="name">{{ template.name }}</span>
+                  @if (template.isDefault) {
+                    <span class="badge-default" title="Template par défaut">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                      Défaut
+                    </span>
+                  }
+                </div>
+              </td>
+              <td class="desc-col">
+                <span class="desc-text">{{ template.description || '-' }}</span>
+              </td>
+              <td class="date-col">
+                @if (template.updatedAt) {
+                  <span class="date-text">{{ formatDate(template.updatedAt) }}</span>
+                } @else {
+                  <span class="date-text text-muted">-</span>
+                }
+              </td>
+              <td class="actions-col">
+                <div class="table-actions">
+                  <button
+                    [routerLink]="['/templates/generate', template.id]"
+                    class="btn-action btn-generate"
+                    title="Générer une facture"
+                  >
+                    Générer
+                  </button>
+                  <button
+                    (click)="openPreview(template.id, template.name, $event)"
+                    class="btn-action btn-preview"
+                    title="Aperçu"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </button>
+                  <button
+                    (click)="editTemplate(template.id, $event)"
+                    class="btn-action btn-edit"
+                    title="Éditer dans le builder"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                  </button>
+                  <button
+                    (click)="deleteTemplate(template.id, $event)"
+                    class="btn-action btn-delete"
+                    title="Supprimer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
           }
-
-          <div class="card-meta">
-            @if (template.updatedAt) {
-              <span class="meta-date">📅 {{ formatDate(template.updatedAt) }}</span>
-            }
-          </div>
-
-          <div class="card-actions">
-            <button
-              [routerLink]="['/templates/generate', template.id]"
-              class="btn-action btn-generate"
-              title="Générer une facture"
-            >
-              🚀 Générer
-            </button>
-            <button
-              (click)="openPreview(template.id, template.name, $event)"
-              class="btn-action btn-preview"
-              title="Aperçu"
-            >
-              👁️ Aperçu
-            </button>
-            <button
-              (click)="editTemplate(template.id, $event)"
-              class="btn-action btn-edit"
-              title="Éditer dans le builder"
-            >
-              ✏️ Éditer
-            </button>
-            <button
-              (click)="deleteTemplate(template.id, $event)"
-              class="btn-action btn-delete"
-              title="Supprimer"
-            >
-              🗑️
-            </button>
-          </div>
-        </div>
-      }
+        </tbody>
+      </table>
     </div>
   }
 </div>
@@ -81,7 +101,7 @@
   <div class="preview-modal-overlay" (click)="closePreview()">
     <div class="preview-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>👁️ Aperçu: {{ previewTemplateName() }}</h2>
+        <h2> Aperçu: {{ previewTemplateName() }}</h2>
         <button class="close-btn" (click)="closePreview()">×</button>
       </div>
 
@@ -93,7 +113,7 @@
           </div>
         } @else if (previewError()) {
           <div class="preview-error">
-            <p>⚠️ {{ previewError() }}</p>
+            <p>{{ previewError() }}</p>
           </div>
         } @else if (previewUrl()) {
           <iframe [src]="previewUrl()" class="preview-frame"></iframe>

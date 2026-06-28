@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Invoice } from '../../../core/models';
@@ -17,6 +17,7 @@ export class GenerateInvoice implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(Api);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   protected templateId = signal<string>('');
   protected targetProfile = signal<string>('EN16931');
@@ -63,9 +64,10 @@ export class GenerateInvoice implements OnInit {
   }
 
   private initForm(): void {
-      
     const p = this.targetProfile();
     const c = this.capabilities();
+
+    console.log('initForm called', { profile: p, capabilities: c });
 
     // Determine requirements
     const requireBankInfo = p === 'EXTENDED' || c.includes('bank_info');
@@ -95,14 +97,10 @@ export class GenerateInvoice implements OnInit {
           email: [''],
           phone: [''],
         }),
-        ...(requireBankInfo
-          ? {
-              bank: this.fb.group({
-                iban: ['', Validators.required],
-                bic: [''],
-              }),
-            }
-          : {}),
+        bank: this.fb.group({
+          iban: ['', requireBankInfo ? [Validators.required] : []],
+          bic: [''],
+        }),
       }),
       buyer: this.fb.group({
         name: ['', Validators.required],
@@ -116,16 +114,15 @@ export class GenerateInvoice implements OnInit {
         }),
       }),
       lines: this.fb.array([this.createLine()]),
-      ...(requirePaymentTerms
-        ? {
-            payment: this.fb.group({
-              terms: ['', Validators.required],
-              method: ['Virement'],
-              due_date: [''],
-            }),
-          }
-        : {}),
+      payment: this.fb.group({
+        terms: ['', requirePaymentTerms ? [Validators.required] : []],
+        method: ['Virement'],
+        due_date: [''],
+      }),
     });
+    
+    this.cdr.detectChanges();
+    console.log('Change detection forced after initForm');
   }
 
   get lines() {
@@ -203,9 +200,7 @@ export class GenerateInvoice implements OnInit {
     });
 
     // Reset lines and add test lines
-    while (this.lines.length !== 0) {
-      this.lines.removeAt(0);
-    }
+    this.lines.clear();
 
     const line1 = this.createLine();
     line1.patchValue({
@@ -243,13 +238,16 @@ export class GenerateInvoice implements OnInit {
     const vatBreakdownMap = new Map<number, { taxable: number; amount: number }>();
 
     for (const line of formValue.lines) {
-      const lineTotalExcl = line.quantity * line.unit_price;
+      const qty = Number(line.quantity || 0);
+      const price = Number(line.unit_price || 0);
+      const rate = Number(line.vat_rate || 0);
+
+      const lineTotalExcl = qty * price;
       subtotalExclVat += lineTotalExcl;
 
-      const lineVat = lineTotalExcl * (line.vat_rate / 100);
+      const lineVat = lineTotalExcl * (rate / 100);
       totalVat += lineVat;
 
-      const rate = line.vat_rate;
       if (!vatBreakdownMap.has(rate)) {
         vatBreakdownMap.set(rate, { taxable: 0, amount: 0 });
       }
@@ -279,18 +277,19 @@ export class GenerateInvoice implements OnInit {
           : undefined,
       },
       lines: formValue.lines.map(
-        (
-          l: { description: string; quantity: number; unit_price: number; vat_rate: number },
-          i: number,
-        ) => {
-          const totalExcl = l.quantity * l.unit_price;
-          const vatAmt = totalExcl * (l.vat_rate / 100);
+        (l: any, i: number) => {
+          const qty = Number(l.quantity || 0);
+          const price = Number(l.unit_price || 0);
+          const rate = Number(l.vat_rate || 0);
+          
+          const totalExcl = qty * price;
+          const vatAmt = totalExcl * (rate / 100);
           return {
             id: (i + 1).toString(),
             description: l.description,
-            quantity: l.quantity,
-            unit_price: l.unit_price,
-            vat_rate: l.vat_rate,
+            quantity: qty,
+            unit_price: price,
+            vat_rate: rate,
             unit: 'EA',
             vat_amount: vatAmt,
             total_excl_vat: totalExcl,
@@ -304,7 +303,7 @@ export class GenerateInvoice implements OnInit {
         total_incl_vat: totalInclVat,
         amount_due: totalInclVat,
         vat_breakdown: Array.from(vatBreakdownMap.entries()).map(([rate, v]) => ({
-          rate,
+          rate: Number(rate),
           taxable_amount: v.taxable,
           vat_amount: v.amount,
         })),

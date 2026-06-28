@@ -365,45 +365,7 @@
   }
 }
 
-.btn-primary {
-  background: #6366f1;
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
 
-  &:hover:not(:disabled) {
-    background: #4f46e5;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.btn-secondary {
-  background: #334155;
-  border: 1px solid #475569;
-  color: #f1f5f9;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #475569;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
 
 .modal-backdrop {
   position: fixed;

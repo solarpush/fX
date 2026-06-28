@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { Template } from '../../../core/models';
 import { TemplateStorage } from '../../../core/services/template-storage';
@@ -12,7 +12,7 @@ import { LivePreview } from './live-preview/live-preview';
 
 @Component({
   selector: 'app-template-editor',
-  imports: [CommonModule, FormsModule, CodeEditor, LivePreview],
+  imports: [CommonModule, FormsModule, CodeEditor, LivePreview, RouterLink],
   templateUrl: './template-editor.html',
   styleUrl: './template-editor.scss',
 })
