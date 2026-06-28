@@ -8,7 +8,7 @@
     <form (ngSubmit)="onSubmit()" class="login-form">
       @if (error()) {
         <div class="error-message">
-          ⚠️ {{ error() }}
+          {{ error() }}
         </div>
       }
       
@@ -25,7 +25,7 @@
         >
       </div>
       
-      <button type="submit" [disabled]="!password() || isLoading()">
+      <button type="submit" class="btn-primary" style="width: 100%" [disabled]="!password() || isLoading()">
         {{ isLoading() ? 'Connexion...' : 'Se connecter' }}
       </button>
     </form>

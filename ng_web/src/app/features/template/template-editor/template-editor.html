@@ -3,12 +3,12 @@
     <div class="header-left">
       <h1>{{ template()?.name || 'Nouveau template' }}</h1>
       @if (isCompiling()) {
-        <span class="status compiling">🔄 Compilation...</span>
+        <span class="status compiling">Compilation...</span>
       }
     </div>
     <div class="header-actions">
       <a routerLink="/assets" target="_blank" class="btn-secondary" style="text-decoration: none">
-        🖼️ Assets
+        Assets
       </a>
       @if (template()?.id) {
         <button (click)="saveTemplateAs()" [disabled]="isSaving()" class="btn-secondary">
@@ -63,7 +63,7 @@
         </div>
       }
       <div class="ai-header">
-        <h2>🪄 Assistant IA</h2>
+        <h2>Assistant IA</h2>
       </div>
       <div class="ai-options">
         <div class="ai-option-group">
@@ -124,7 +124,7 @@
           (click)="generateWithAI()"
           [disabled]="isGenerating() || !aiPrompt().trim()"
         >
-          {{ isGenerating() ? '✨ Génération...' : '✨ Demander' }}
+          {{ isGenerating() ? 'Génération...' : 'Demander' }}
         </button>
       </div>
     </div>
@@ -137,9 +137,9 @@
       @if (compilationError()) {
         <div class="error-banner">
           <div class="error-header">
-            <span>⚠️ Problème détecté</span>
+            <span>Problème détecté</span>
             <button class="fix-btn" (click)="fixErrorWithAI()" [disabled]="isGenerating()">
-              {{ isGenerating() ? '🪄 Correction...' : '🪄 Auto-Fix' }}
+              {{ isGenerating() ? 'Correction...' : 'Auto-Fix' }}
             </button>
           </div>
           <pre class="error-text">{{ compilationError() }}</pre>

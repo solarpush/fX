@@ -1,14 +1,20 @@
 <div class="assets-manager">
   <header class="page-header">
     <div class="header-content">
-      <h1>🖼️ Gestionnaire d'images</h1>
+      <h1>Gestionnaire d'images</h1>
       <p>Importez et gérez les images utilisables dans vos templates Typst.</p>
     </div>
-    
+
     <div class="upload-section">
-      <input type="file" id="imageUpload" (change)="onImageSelected($event)" accept=".png,.jpg,.jpeg,.svg,.gif" hidden>
+      <input
+        type="file"
+        id="imageUpload"
+        (change)="onImageSelected($event)"
+        accept=".png,.jpg,.jpeg,.svg,.gif"
+        hidden
+      />
       <label for="imageUpload" class="upload-btn" [class.loading]="isUploadingImage()">
-        {{ isUploadingImage() ? '⏳ Upload en cours...' : '📤 Ajouter une image' }}
+        {{ isUploadingImage() ? 'Upload en cours...' : 'Ajouter une image' }}
       </label>
     </div>
   </header>
@@ -17,14 +23,16 @@
     @for (img of imagesList(); track img.name) {
       <div class="image-card">
         <div class="img-preview">
-          <img [src]="img.url" [alt]="img.name">
+          <img [src]="img.url" [alt]="img.name" />
         </div>
         <div class="img-info">
           <span class="img-name" [title]="img.name">{{ img.name }}</span>
           <span class="img-size">{{ (img.size / 1024).toFixed(1) }} KB</span>
         </div>
         <div class="img-actions">
-          <button (click)="copyImageUrl(img.url)" title="Copier le chemin #image(&quot;/images/...&quot;)">📋 Copier le chemin</button>
+          <button (click)="copyImageUrl(img.url)" title='Copier le chemin #image("/images/...")'>
+            📋 Copier le chemin
+          </button>
           <button (click)="deleteImage(img.name)" title="Supprimer" class="danger">🗑️</button>
         </div>
       </div>
@@ -32,7 +40,9 @@
       <div class="empty-state">
         <div class="empty-icon">📁</div>
         <h3>Aucune image</h3>
-        <p>Commencez par ajouter une image (Logo, signature...) pour l'utiliser dans vos templates.</p>
+        <p>
+          Commencez par ajouter une image (Logo, signature...) pour l'utiliser dans vos templates.
+        </p>
       </div>
     }
   </div>
