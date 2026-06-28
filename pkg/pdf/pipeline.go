@@ -295,8 +295,8 @@ func (fp *FacturXPipeline) patchFacturXPDF(pdfContent []byte, profile invoice.Pr
 	// officiels. Certains validateurs (dont FNFE) ne parcourent pas les object
 	// streams et ne trouvent alors ni le /AF, ni le Filespec, ni les métadonnées.
 	if ctx.Configuration != nil {
-		ctx.Configuration.WriteObjectStream = false
-		ctx.Configuration.WriteXRefStream = false
+		ctx.WriteObjectStream = false
+		ctx.WriteXRefStream = false
 	}
 
 	var w bytes.Buffer
