@@ -17,7 +17,6 @@ import (
 // TemplateManager gère les templates Typst
 type TemplateManager struct {
 	templatesPath string
-	storage       interface{}
 }
 
 // NewTemplateManager crée un nouveau gestionnaire de templates
@@ -254,6 +253,10 @@ func (h *Handler) HandleCompilePreview(w http.ResponseWriter, r *http.Request) {
 	os.MkdirAll(tmpBase, 0755)
 
 	tmpDir, err := os.MkdirTemp(tmpBase, "preview-*")
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "failed to create temp directory")
+		return
+	}
 
 	defer os.RemoveAll(tmpDir)
 

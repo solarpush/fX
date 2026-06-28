@@ -184,16 +184,9 @@ func DetectProfile(inv *Invoice) Profile {
 	}
 
 	// Champs étendus -> EXTENDED, sinon EN16931 par défaut.
-	hasExtendedFields := false
-	if inv.Payment != nil && inv.Payment.Terms != "" {
-		hasExtendedFields = true
-	}
-	if inv.Seller.Bank != nil && inv.Seller.Bank.IBAN != "" {
-		hasExtendedFields = true
-	}
-	if inv.Seller.Contact != nil {
-		hasExtendedFields = true
-	}
+	hasExtendedFields := (inv.Payment != nil && inv.Payment.Terms != "") ||
+		(inv.Seller.Bank != nil && inv.Seller.Bank.IBAN != "") ||
+		(inv.Seller.Contact != nil)
 
 	if hasExtendedFields {
 		return ProfileEXTENDED
