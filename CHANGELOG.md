@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/solarpush/fX/compare/v1.1.0...v1.1.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* **workflow:** 🛠️ update trigger for Docker publish workflow to use p… ([a4069ec](https://github.com/solarpush/fX/commit/a4069ec30f8901adec5aa2f8fe7f593ea3416cc1))
+* **workflow:** 🛠️ update trigger for Docker publish workflow to use push events ([e10b544](https://github.com/solarpush/fX/commit/e10b54446e5cac5c86f2f303be1d9b9de989bd66))
+
 ## [1.1.0](https://github.com/solarpush/fX/compare/v1.0.0...v1.1.0) (2026-06-28)
 
 
