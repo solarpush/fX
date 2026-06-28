@@ -1,0 +1,13 @@
+# Changelog
+
+## 1.0.0 (2026-06-28)
+
+
+### Features
+
+* ✨ Add Typst installation step and improve error handling ([9ee1ee4](https://github.com/solarpush/fX/commit/9ee1ee45393879a0091ede8809a04ee4378c1e76))
+* ✨ Add Typst installation step and improve error handling ([a96f6b4](https://github.com/solarpush/fX/commit/a96f6b481eee4c30496e6d7e76c772de90cf8fb5))
+* **ci:** ✨ Add Docker publish workflow for automated image builds ([39c49a3](https://github.com/solarpush/fX/commit/39c49a387532fcac96379cf09ffd983c2b8df8a5))
+* **ci:** ✨ Add Docker publish workflow for automated image builds ([d7c4cb8](https://github.com/solarpush/fX/commit/d7c4cb8726c1ff7893bf4a5a440d66efc9878376))
+* **dependabot:** ✨ Add Dependabot configuration for Go modules and GitHub Actions ([f75de8e](https://github.com/solarpush/fX/commit/f75de8e28faff12911c68e24c7605b38a5bb1ece))
+* **tests:** ✨ Add comprehensive tests for Facture-X Go library ([9d1126d](https://github.com/solarpush/fX/commit/9d1126d107966f40d331c151c2b86bd1763d8627))
