@@ -1,0 +1,151 @@
+<div class="template-editor">
+  <header class="editor-header">
+    <div class="header-left">
+      <h1>{{ template()?.name || 'Nouveau template' }}</h1>
+      @if (isCompiling()) {
+        <span class="status compiling">🔄 Compilation...</span>
+      }
+    </div>
+    <div class="header-actions">
+      <a routerLink="/assets" target="_blank" class="btn-secondary" style="text-decoration: none">
+        🖼️ Assets
+      </a>
+      @if (template()?.id) {
+        <button (click)="saveTemplateAs()" [disabled]="isSaving()" class="btn-secondary">
+          Enregistrer sous...
+        </button>
+      }
+      <button (click)="saveTemplate()" [disabled]="isSaving()" class="btn-primary">
+        {{ isSaving() ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+    </div>
+  </header>
+
+  @if (showSaveModal()) {
+    <div class="modal-backdrop">
+      <div class="modal-box">
+        <h3>Enregistrer sous</h3>
+        <p>Entrez un nom pour ce template (sans extension) :</p>
+        <input
+          type="text"
+          [ngModel]="newTemplateName()"
+          (ngModelChange)="newTemplateName.set($event)"
+          placeholder="Ex: Facture_Standard_2026"
+          class="modal-input"
+          (keydown.enter)="confirmSaveAs()"
+          autofocus
+        />
+        <div class="modal-actions">
+          <button class="btn-secondary" (click)="showSaveModal.set(false)">Annuler</button>
+          <button
+            class="btn-primary"
+            (click)="confirmSaveAs()"
+            [disabled]="!newTemplateName().trim()"
+          >
+            Créer
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="editor-content">
+    <div class="ai-floating-chat" [class.is-generating]="isGenerating()">
+      @if (isGenerating()) {
+        <div class="ai-generating-overlay">
+          <div class="ai-loader">
+            <div class="ai-loader-bar"></div>
+            <div class="ai-loader-bar"></div>
+            <div class="ai-loader-bar"></div>
+            <div class="ai-loader-bar"></div>
+          </div>
+          <span class="ai-generating-text">L'IA rédige le code Typst...</span>
+        </div>
+      }
+      <div class="ai-header">
+        <h2>🪄 Assistant IA</h2>
+      </div>
+      <div class="ai-options">
+        <div class="ai-option-group">
+          <label>Profil cible :</label>
+          <select
+            [ngModel]="targetProfile()"
+            (ngModelChange)="updateProfile($event)"
+            class="ai-select"
+          >
+            <option value="EN16931">EN16931 (Standard européen)</option>
+            <option value="EXTENDED">EXTENDED (Complet)</option>
+          </select>
+        </div>
+        @if (targetProfile() !== 'EXTENDED') {
+          <div class="ai-option-group">
+            <label>Options (Capabilities) :</label>
+            <div class="checkbox-group">
+              <label [style.opacity]="targetProfile() === 'EN16931' ? '0.5' : '1'">
+                <input
+                  type="checkbox"
+                  (change)="toggleCapability('vat_breakdown')"
+                  [checked]="hasCapability('vat_breakdown') || targetProfile() === 'EN16931'"
+                  [disabled]="targetProfile() === 'EN16931'"
+                />
+                Détail TVA
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  (change)="toggleCapability('bank_info')"
+                  [checked]="hasCapability('bank_info')"
+                />
+                Coordonnées bancaires
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  (change)="toggleCapability('payment_terms')"
+                  [checked]="hasCapability('payment_terms')"
+                />
+                Conditions paiement
+              </label>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="ai-body">
+        <textarea
+          [(ngModel)]="aiPrompt"
+          placeholder="Demandez à l'IA de modifier le template (ex: Ajouter un tableau pour les lignes, changer la couleur en bleu...)"
+          class="ai-textarea"
+          (keydown.control.enter)="generateWithAI()"
+          (keydown.meta.enter)="generateWithAI()"
+          [disabled]="isGenerating()"
+        ></textarea>
+        <button
+          class="ai-btn"
+          (click)="generateWithAI()"
+          [disabled]="isGenerating() || !aiPrompt().trim()"
+        >
+          {{ isGenerating() ? '✨ Génération...' : '✨ Demander' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="code-section">
+      <app-code-editor [code]="typstCode()" (codeChange)="onCodeChange($event)" />
+    </div>
+
+    <div class="preview-section">
+      @if (compilationError()) {
+        <div class="error-banner">
+          <div class="error-header">
+            <span>⚠️ Problème détecté</span>
+            <button class="fix-btn" (click)="fixErrorWithAI()" [disabled]="isGenerating()">
+              {{ isGenerating() ? '🪄 Correction...' : '🪄 Auto-Fix' }}
+            </button>
+          </div>
+          <pre class="error-text">{{ compilationError() }}</pre>
+        </div>
+      }
+      <app-live-preview [previewBlob]="previewBlob()" [isLoading]="isCompiling()" />
+    </div>
+  </div>
+</div>

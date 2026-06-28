@@ -1,0 +1,25 @@
+<div class="code-editor">
+  <div class="editor-toolbar">
+    <span class="editor-title">Code Typst</span>
+  </div>
+  <div class="editor-container">
+    <div class="line-numbers" #lineNumbers>
+      @for (line of lines(); track $index) {
+        <div class="line-number">{{ $index + 1 }}</div>
+      }
+    </div>
+    <div class="code-wrapper">
+      <pre class="highlight-layer" #highlightLayer [innerHTML]="highlightedCode()"></pre>
+      <textarea
+        class="code-textarea"
+        [value]="internalCode()"
+        (input)="onInput($event)"
+        (keydown)="onKeyDown($event)"
+        (scroll)="onScroll($event)"
+        wrap="off"
+        spellcheck="false"
+        placeholder="Entrez votre code Typst ici..."
+      ></textarea>
+    </div>
+  </div>
+</div>

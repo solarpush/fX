@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  fx-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      # Serveur
+      - PORT=8080
+      - HOST=0.0.0.0
+      - READ_TIMEOUT=300
+      - WRITE_TIMEOUT=300
+
+      # Storage - Local (dev)
+      - STORAGE_TYPE=local
+      - STORAGE_LOCAL_PATH=/storage
+      # Authentication
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - AUTH_API_KEY=${AUTH_API_KEY:-my-secret-api-key}
+      - AUTH_PASSWORD=${AUTH_PASSWORD:-admin}
+      - AUTH_JWT_SECRET=${AUTH_JWT_SECRET:-super-secret}
+
+      # Storage - S3/MinIO (décommenter pour utiliser)
+      # - STORAGE_TYPE=s3
+      # - S3_ENDPOINT=http://minio:9000
+      # - S3_REGION=us-east-1
+      # - S3_BUCKET=facturx
+      # - S3_ACCESS_KEY=minioadmin
+      # - S3_SECRET_KEY=minioadmin
+      # - S3_USE_PATH_STYLE=true
+
+      # Storage - GCS (décommenter pour utiliser)
+      # - STORAGE_TYPE=gcs
+      # - S3_ENDPOINT=https://storage.googleapis.com
+      # - S3_BUCKET=your-bucket
+      # - S3_ACCESS_KEY=your-access-key
+      # - S3_SECRET_KEY=your-secret-key
+
+      # Templates custom et typst
+      - TEMPLATES_PATH=/templates-custom
+      - TYPST_FONT_PATHS=/fonts
+      - TYPST_ROOT=/
+
+      # AI Generation
+      - AI_PROVIDER=${AI_PROVIDER:-openai}
+      - AI_BASE_URL=${AI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}
+      - AI_MODEL=${AI_MODEL:-gemini-3.5-flash}
+      - AI_API_KEY=${AI_API_KEY:-}
+    volumes:
+      - ./storage:/storage
+      - ./templates-custom:/templates-custom
+      - ./fonts:/fonts
+      - ./images:/images
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/v1/health",
+        ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # Proxy réseau pour rediriger le trafic Docker vers l'Ollama local (qui écoute sur 127.0.0.1)
+  ollama-proxy:
+    image: alpine/socat
+    network_mode: "host"
+    command: tcp-listen:11435,fork,reuseaddr tcp:127.0.0.1:11434
+    restart: unless-stopped
+
+
+
+  ng-web:
+    build:
+      context: ./ng_web
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    depends_on:
+      - fx-server
+    volumes:
+      - ./ng_web/src:/app/src
+    restart: unless-stopped
+
+networks:
+  default:
+    name: fx-network

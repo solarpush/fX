@@ -1,0 +1,104 @@
+<div class="template-list">
+  <header class="list-header">
+    <h1>Templates Typst</h1>
+    <a routerLink="/templates/new" class="btn-primary"> ➕ Nouveau template </a>
+  </header>
+
+  @if (error()) {
+    <div class="error-message">❌ {{ error() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des templates...</p>
+    </div>
+  } @else if (templates().length === 0) {
+    <div class="empty-state">
+      <p>📄 Aucun template trouvé</p>
+      <a routerLink="/templates/new" class="btn-primary">Créer votre premier template</a>
+    </div>
+  } @else {
+    <div class="templates-grid">
+      @for (template of templates(); track template.id) {
+        <div class="template-card">
+          <div class="card-header">
+            <div class="card-icon">📝</div>
+            <h3>{{ template.name }}</h3>
+            @if (template.isDefault) {
+              <span class="badge-default">⭐</span>
+            }
+          </div>
+
+          @if (template.description) {
+            <p class="card-description">{{ template.description }}</p>
+          }
+
+          <div class="card-meta">
+            @if (template.updatedAt) {
+              <span class="meta-date">📅 {{ formatDate(template.updatedAt) }}</span>
+            }
+          </div>
+
+          <div class="card-actions">
+            <button
+              [routerLink]="['/templates/generate', template.id]"
+              class="btn-action btn-generate"
+              title="Générer une facture"
+            >
+              🚀 Générer
+            </button>
+            <button
+              (click)="openPreview(template.id, template.name, $event)"
+              class="btn-action btn-preview"
+              title="Aperçu"
+            >
+              👁️ Aperçu
+            </button>
+            <button
+              (click)="editTemplate(template.id, $event)"
+              class="btn-action btn-edit"
+              title="Éditer dans le builder"
+            >
+              ✏️ Éditer
+            </button>
+            <button
+              (click)="deleteTemplate(template.id, $event)"
+              class="btn-action btn-delete"
+              title="Supprimer"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal Preview -->
+@if (showPreview()) {
+  <div class="preview-modal-overlay" (click)="closePreview()">
+    <div class="preview-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>👁️ Aperçu: {{ previewTemplateName() }}</h2>
+        <button class="close-btn" (click)="closePreview()">×</button>
+      </div>
+
+      <div class="modal-content">
+        @if (previewLoading()) {
+          <div class="preview-loading">
+            <div class="spinner"></div>
+            <p>Génération de l'aperçu...</p>
+          </div>
+        } @else if (previewError()) {
+          <div class="preview-error">
+            <p>⚠️ {{ previewError() }}</p>
+          </div>
+        } @else if (previewUrl()) {
+          <iframe [src]="previewUrl()" class="preview-frame"></iframe>
+        }
+      </div>
+    </div>
+  </div>
+}

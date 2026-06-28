@@ -1,0 +1,161 @@
+.generate-invoice-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  flex: 1;
+}
+
+.badge {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 1.5rem;
+}
+
+.form-section h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.city-zip {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.lines-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.line-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.desc-group {
+  flex: 1;
+}
+
+.sm {
+  width: 100px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.75rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.7;
+}
+.btn-icon:hover {
+  opacity: 1;
+}
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.add-line-btn {
+  margin-top: 1rem;
+}
+
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-large {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+.error-banner {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+input.invalid {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.error-msg {
+  display: block;
+  color: #ef4444;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.line-headers {
+  margin-bottom: 0.25rem;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0.5rem;
+}
+.line-headers .form-group {
+  margin: 0;
+}
+.line-headers label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0;
+}

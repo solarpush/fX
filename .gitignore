@@ -1,0 +1,41 @@
+# Binaries
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+fx
+
+# Test binary
+*.test
+
+# Output files
+*.out
+*.pdf
+*.xml
+
+# Go workspace file
+go.work
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WASM build artifacts
+*.wasm
+wasm_exec.js
+
+# Node
+node_modules/
+package-lock.json
+tmp/
+
+# Env variables
+.env

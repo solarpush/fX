@@ -1,0 +1,146 @@
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+.app-header {
+  background: #1e293b;
+  border-bottom: 1px solid #475569;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .logo {
+    margin: 0;
+    a {
+      color: #f1f5f9;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: -0.05em;
+    }
+  }
+
+  .main-nav {
+    display: flex;
+    gap: 1.5rem;
+    flex: 1;
+    margin-left: 2rem;
+
+    a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      transition: all 0.2s;
+
+      &:hover {
+        color: #f1f5f9;
+        background: #334155;
+      }
+
+      &.active {
+        color: #f1f5f9;
+        background: #1e293b;
+      }
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+
+    .logout-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #334155;
+      }
+    }
+  }
+}
+
+.nav-dropdown {
+  position: relative;
+
+  .dropdown-toggle {
+    color: #94a3b8;
+    background: transparent;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+
+    &:hover {
+      color: #f1f5f9;
+      background: #334155;
+    }
+  }
+
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 0.375rem;
+    margin-top: 0.25rem;
+    min-width: 150px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+
+    a {
+      display: block;
+      padding: 0.5rem 1rem;
+
+      &:first-child {
+        border-radius: 0.375rem 0.375rem 0 0;
+      }
+
+      &:last-child {
+        border-radius: 0 0 0.375rem 0.375rem;
+      }
+    }
+  }
+
+  &:hover .dropdown-menu {
+    display: block;
+  }
+}
+
+.app-main {
+  flex: 1;
+  overflow: auto;
+  background: #0f172a;
+}

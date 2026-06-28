@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "profile": "MINIMUM",
+  "invoice": {
+    "number": "INV-MIN-2026-001",
+    "issue_date": "2026-06-27T00:00:00Z",
+    "currency": "EUR",
+    "type": "380"
+  },
+  "seller": {
+    "name": "Entreprise Express",
+    "address": {
+      "street": "10 Rue de la Paix",
+      "postal_code": "75000",
+      "city": "Paris",
+      "country": "FR"
+    }
+  },
+  "buyer": {
+    "name": "Client Rapide",
+    "address": {
+      "street": "20 Avenue des Champs",
+      "postal_code": "75008",
+      "city": "Paris",
+      "country": "FR"
+    }
+  },
+  "totals": {
+    "subtotal_excl_vat": 100.00,
+    "total_vat": 20.00,
+    "total_incl_vat": 120.00,
+    "amount_due": 120.00
+  }
+}

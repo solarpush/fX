@@ -1,0 +1,20 @@
+{
+    "/api/v1": {
+        "target": "http://fx-server:8080",
+        "secure": false,
+        "changeOrigin": true,
+        "logLevel": "debug",
+        "timeout": 300000,
+        "proxyTimeout": 300000
+    },
+    "/ws": {
+        "target": "ws://fx-server:8080",
+        "secure": false,
+        "ws": true
+    },
+    "/images": {
+        "target": "http://fx-server:8080",
+        "secure": false,
+        "changeOrigin": true
+    }
+}

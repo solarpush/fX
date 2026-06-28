@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "profile": "EXTENDED",
+  "invoice": {
+    "number": "INV-EXT-2026-002",
+    "issue_date": "2026-06-27T00:00:00Z",
+    "due_date": "2026-07-27T00:00:00Z",
+    "currency": "EUR",
+    "type": "380",
+    "purchase_order_ref": "PO-987654321",
+    "note": "Facture émise pour la prestation globale."
+  },
+  "seller": {
+    "name": "Tech Corp Solutions",
+    "vat_id": "FR12345678901",
+    "registration": "123 456 789 RCS Paris",
+    "contact": {
+      "email": "compta@techcorp.com",
+      "phone": "+33 1 23 45 67 89"
+    },
+    "address": {
+      "street": "100 Boulevard de la Technologie",
+      "postal_code": "75010",
+      "city": "Paris",
+      "country": "FR"
+    },
+    "bank": {
+      "iban": "FR7630001000011234567890123",
+      "bic": "SOCGFRPP",
+      "bank_name": "Société Générale",
+      "account_name": "Tech Corp Solutions"
+    }
+  },
+  "buyer": {
+    "name": "Super Client SA",
+    "vat_id": "FR98765432109",
+    "address": {
+      "street": "50 Rue des Acheteurs",
+      "postal_code": "69000",
+      "city": "Lyon",
+      "country": "FR"
+    }
+  },
+  "lines": [
+    {
+      "id": "1",
+      "description": "Développement API Go",
+      "quantity": 10.0,
+      "unit": "HUR",
+      "unit_price": 100.0,
+      "vat_rate": 20.0,
+      "vat_amount": 200.0,
+      "total_excl_vat": 1000.0,
+      "total_incl_vat": 1200.0,
+      "product_code": "DEV-GO-01"
+    },
+    {
+      "id": "2",
+      "description": "Hébergement Cloud (Mois)",
+      "quantity": 1.0,
+      "unit": "MON",
+      "unit_price": 50.0,
+      "vat_rate": 20.0,
+      "vat_amount": 10.0,
+      "total_excl_vat": 50.0,
+      "total_incl_vat": 60.0,
+      "product_code": "HOST-01"
+    }
+  ],
+  "totals": {
+    "subtotal_excl_vat": 1050.0,
+    "tax_basis_total": 1050.0,
+    "vat_breakdown": [
+      {
+        "rate": 20.0,
+        "taxable_amount": 1050.0,
+        "vat_amount": 210.0
+      }
+    ],
+    "total_vat": 210.0,
+    "total_incl_vat": 1260.0,
+    "amount_due": 1260.0
+  },
+  "payment": {
+    "terms": "Paiement à 30 jours fin de mois.",
+    "method": "Virement bancaire",
+    "due_date": "2026-07-27T00:00:00Z"
+  }
+}

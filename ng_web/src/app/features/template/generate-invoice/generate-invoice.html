@@ -1,0 +1,411 @@
+<div class="generate-invoice-container">
+  <header class="header">
+    <button routerLink="/templates" class="btn-secondary">← Retour</button>
+    <h1>Générer une facture</h1>
+    <span class="badge">{{ targetProfile() }}</span>
+  </header>
+
+  @if (error()) {
+    <div class="error-banner">{{ error() }}</div>
+  }
+
+  @if (invoiceForm) {
+    <div
+      class="header-actions"
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      "
+    >
+      <h2 style="margin: 0">Remplir la facture</h2>
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="fillTestData()"
+        style="font-size: 0.9rem; padding: 0.5rem 1rem"
+      >
+        ⚡ Remplir avec des données de test
+      </button>
+    </div>
+
+    <form [formGroup]="invoiceForm" (ngSubmit)="onSubmit()" class="invoice-form">
+      <!-- Section Facture -->
+      <section class="form-section">
+        <h3>Informations de la facture</h3>
+        <div class="form-grid" formGroupName="invoice">
+          <div class="form-group">
+            <label>N° Facture *</label>
+            <input
+              type="text"
+              formControlName="number"
+              placeholder="INV-2026-001"
+              [class.invalid]="
+                invoiceForm.get('invoice.number')?.invalid &&
+                invoiceForm.get('invoice.number')?.touched
+              "
+            />
+            @if (
+              invoiceForm.get('invoice.number')?.invalid &&
+              invoiceForm.get('invoice.number')?.touched
+            ) {
+              <span class="error-msg">Ce champ est requis</span>
+            }
+          </div>
+          <div class="form-group">
+            <label>Date d'émission *</label>
+            <input
+              type="date"
+              formControlName="issue_date"
+              [class.invalid]="
+                invoiceForm.get('invoice.issue_date')?.invalid &&
+                invoiceForm.get('invoice.issue_date')?.touched
+              "
+            />
+            @if (
+              invoiceForm.get('invoice.issue_date')?.invalid &&
+              invoiceForm.get('invoice.issue_date')?.touched
+            ) {
+              <span class="error-msg">Ce champ est requis</span>
+            }
+          </div>
+          <div class="form-group">
+            <label>Type de document *</label>
+            <select
+              formControlName="type"
+              style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px"
+            >
+              <option value="380">Facture (380)</option>
+              <option value="381">Avoir (381)</option>
+              <option value="384">Facture rectificative (384)</option>
+              <option value="386">Facture d'acompte (386)</option>
+              <option value="389">Auto-facturation (389)</option>
+              <option value="751">Facture pour information (751)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Devise *</label>
+            <select
+              formControlName="currency"
+              style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px"
+            >
+              <option value="EUR">Euro (EUR)</option>
+              <option value="USD">Dollar US (USD)</option>
+              <option value="GBP">Livre Sterling (GBP)</option>
+              <option value="CHF">Franc Suisse (CHF)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Réf. commande (PO) (Optionnel)</label>
+            <input type="text" formControlName="purchase_order_ref" placeholder="PO-987654321" />
+          </div>
+          <div class="form-group full-width">
+            <label>Note / Commentaire</label>
+            <input type="text" formControlName="note" placeholder="Merci pour votre confiance" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Grille 2 colonnes pour Vendeur et Client -->
+      <div
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-bottom: 1.5rem"
+      >
+        <!-- Section Vendeur -->
+        <section class="form-section" style="margin-bottom: 0">
+          <h3>Vendeur (Vous)</h3>
+          <div
+            class="form-grid"
+            formGroupName="seller"
+            style="display: flex; flex-direction: column; gap: 1rem"
+          >
+            <div class="form-group">
+              <label>Nom / Raison sociale *</label>
+              <input
+                type="text"
+                formControlName="name"
+                [class.invalid]="
+                  invoiceForm.get('seller.name')?.invalid && invoiceForm.get('seller.name')?.touched
+                "
+              />
+              @if (
+                invoiceForm.get('seller.name')?.invalid && invoiceForm.get('seller.name')?.touched
+              ) {
+                <span class="error-msg">Ce champ est requis</span>
+              }
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+              <div class="form-group">
+                <label>N° TVA Intracom. (Optionnel)</label>
+                <input type="text" formControlName="vat_id" placeholder="FR..." />
+              </div>
+              <div class="form-group">
+                <label>N° SIRET</label>
+                <input type="text" formControlName="siret" placeholder="123 456 789 00012" />
+              </div>
+            </div>
+
+            <div class="form-group" formGroupName="address">
+              <label>Adresse complète *</label>
+              <input
+                type="text"
+                formControlName="street"
+                placeholder="Rue"
+                [class.invalid]="
+                  invoiceForm.get('seller.address.street')?.invalid &&
+                  invoiceForm.get('seller.address.street')?.touched
+                "
+                style="margin-bottom: 0.5rem"
+              />
+              <div
+                class="city-zip"
+                style="display: grid; grid-template-columns: 1fr 2fr; gap: 0.5rem"
+              >
+                <input
+                  type="text"
+                  formControlName="postal_code"
+                  placeholder="CP"
+                  [class.invalid]="
+                    invoiceForm.get('seller.address.postal_code')?.invalid &&
+                    invoiceForm.get('seller.address.postal_code')?.touched
+                  "
+                />
+                <input
+                  type="text"
+                  formControlName="city"
+                  placeholder="Ville"
+                  [class.invalid]="
+                    invoiceForm.get('seller.address.city')?.invalid &&
+                    invoiceForm.get('seller.address.city')?.touched
+                  "
+                />
+              </div>
+            </div>
+
+            <div
+              class="form-group"
+              formGroupName="contact"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem"
+            >
+              <div>
+                <label>Email</label>
+                <input type="email" formControlName="email" placeholder="email@entreprise.com" />
+              </div>
+              <div>
+                <label>Téléphone</label>
+                <input type="text" formControlName="phone" placeholder="01 23 45 67 89" />
+              </div>
+            </div>
+
+            @if (invoiceForm.get('seller.bank')) {
+              <div class="form-group" formGroupName="bank">
+                <label>Coordonnées Bancaires (IBAN) *</label>
+                <input
+                  type="text"
+                  formControlName="iban"
+                  placeholder="FR76 ..."
+                  [class.invalid]="
+                    invoiceForm.get('seller.bank.iban')?.invalid &&
+                    invoiceForm.get('seller.bank.iban')?.touched
+                  "
+                />
+                @if (
+                  invoiceForm.get('seller.bank.iban')?.invalid &&
+                  invoiceForm.get('seller.bank.iban')?.touched
+                ) {
+                  <span class="error-msg">L'IBAN est requis pour ce profil de facture</span>
+                }
+                <input
+                  type="text"
+                  formControlName="bic"
+                  placeholder="BIC (Optionnel)"
+                  style="margin-top: 0.5rem"
+                />
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Section Client -->
+        <section class="form-section" style="margin-bottom: 0">
+          <h3>Client</h3>
+          <div
+            class="form-grid"
+            formGroupName="buyer"
+            style="display: flex; flex-direction: column; gap: 1rem"
+          >
+            <div class="form-group">
+              <label>Nom / Raison sociale *</label>
+              <input
+                type="text"
+                formControlName="name"
+                [class.invalid]="
+                  invoiceForm.get('buyer.name')?.invalid && invoiceForm.get('buyer.name')?.touched
+                "
+              />
+              @if (
+                invoiceForm.get('buyer.name')?.invalid && invoiceForm.get('buyer.name')?.touched
+              ) {
+                <span class="error-msg">Ce champ est requis</span>
+              }
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+              <div class="form-group">
+                <label>N° TVA Intracom. (Optionnel)</label>
+                <input type="text" formControlName="vat_id" placeholder="FR..." />
+              </div>
+              <div class="form-group">
+                <label>N° SIRET</label>
+                <input type="text" formControlName="siret" placeholder="123 456 789 00012" />
+              </div>
+            </div>
+
+            <div class="form-group" formGroupName="address">
+              <label>Adresse complète *</label>
+              <input
+                type="text"
+                formControlName="street"
+                placeholder="Rue"
+                [class.invalid]="
+                  invoiceForm.get('buyer.address.street')?.invalid &&
+                  invoiceForm.get('buyer.address.street')?.touched
+                "
+                style="margin-bottom: 0.5rem"
+              />
+              <div
+                class="city-zip"
+                style="display: grid; grid-template-columns: 1fr 2fr; gap: 0.5rem"
+              >
+                <input
+                  type="text"
+                  formControlName="postal_code"
+                  placeholder="CP"
+                  [class.invalid]="
+                    invoiceForm.get('buyer.address.postal_code')?.invalid &&
+                    invoiceForm.get('buyer.address.postal_code')?.touched
+                  "
+                />
+                <input
+                  type="text"
+                  formControlName="city"
+                  placeholder="Ville"
+                  [class.invalid]="
+                    invoiceForm.get('buyer.address.city')?.invalid &&
+                    invoiceForm.get('buyer.address.city')?.touched
+                  "
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Lignes de facture -->
+      <section class="form-section">
+        <h3>Lignes de facturation</h3>
+        <div formArrayName="lines" class="lines-container">
+          <div class="line-row line-headers">
+            <div class="form-group desc-group"><label>Description *</label></div>
+            <div class="form-group sm"><label>Qté *</label></div>
+            <div class="form-group sm"><label>Prix U. *</label></div>
+            <div class="form-group sm"><label>TVA % *</label></div>
+            <div class="btn-icon" style="visibility: hidden">❌</div>
+          </div>
+          @for (line of lines.controls; track $index; let i = $index) {
+            <div [formGroupName]="i" class="line-row">
+              <div class="form-group desc-group">
+                <input
+                  type="text"
+                  formControlName="description"
+                  placeholder="Ex: Prestation web"
+                  [class.invalid]="
+                    line.get('description')?.invalid && line.get('description')?.touched
+                  "
+                />
+              </div>
+              <div class="form-group sm">
+                <input
+                  type="number"
+                  formControlName="quantity"
+                  placeholder="1"
+                  [class.invalid]="line.get('quantity')?.invalid && line.get('quantity')?.touched"
+                />
+              </div>
+              <div class="form-group sm">
+                <input
+                  type="number"
+                  formControlName="unit_price"
+                  placeholder="100"
+                  [class.invalid]="
+                    line.get('unit_price')?.invalid && line.get('unit_price')?.touched
+                  "
+                />
+              </div>
+              <div class="form-group sm">
+                <input
+                  type="number"
+                  formControlName="vat_rate"
+                  placeholder="20"
+                  [class.invalid]="line.get('vat_rate')?.invalid && line.get('vat_rate')?.touched"
+                />
+              </div>
+              <button
+                type="button"
+                class="btn-icon"
+                (click)="removeLine(i)"
+                [disabled]="lines.length === 1"
+                title="Supprimer la ligne"
+              >
+                ❌
+              </button>
+            </div>
+          }
+        </div>
+        <button type="button" class="btn-secondary add-line-btn" (click)="addLine()">
+          + Ajouter une ligne
+        </button>
+      </section>
+
+      <!-- Paiement -->
+      @if (invoiceForm.get('payment')) {
+        <section class="form-section">
+          <h3>Paiement</h3>
+          <div class="form-grid" formGroupName="payment">
+            <div class="form-group">
+              <label>Conditions de paiement *</label>
+              <input
+                type="text"
+                formControlName="terms"
+                placeholder="Paiement à 30 jours"
+                [class.invalid]="
+                  invoiceForm.get('payment.terms')?.invalid &&
+                  invoiceForm.get('payment.terms')?.touched
+                "
+              />
+              @if (
+                invoiceForm.get('payment.terms')?.invalid &&
+                invoiceForm.get('payment.terms')?.touched
+              ) {
+                <span class="error-msg">Les conditions de paiement sont requises</span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Date d'échéance</label>
+              <input type="date" formControlName="due_date" />
+            </div>
+          </div>
+        </section>
+      }
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary btn-large" [disabled]="isGenerating()">
+          {{ isGenerating() ? 'Génération en cours...' : '🚀 Générer le PDF Factur-X' }}
+        </button>
+      </div>
+    </form>
+  } @else {
+    <div class="loading">Chargement du formulaire...</div>
+  }
+</div>

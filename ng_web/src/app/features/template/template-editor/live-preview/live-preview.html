@@ -1,0 +1,22 @@
+<div class="live-preview">
+  <div class="preview-toolbar">
+    <span class="preview-title">Aperçu PDF</span>
+    @if (isLoading()) {
+      <span class="loading-indicator">🔄 Compilation...</span>
+    }
+  </div>
+  <div class="preview-content">
+    @if (previewUrl()) {
+      <iframe [src]="previewUrl()" class="preview-frame" title="Preview"></iframe>
+    } @else if (isLoading()) {
+      <div class="preview-placeholder">
+        <div class="spinner"></div>
+        <p>Compilation en cours...</p>
+      </div>
+    } @else {
+      <div class="preview-placeholder">
+        <p>L'aperçu apparaîtra ici après la compilation</p>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,120 @@
+:host {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.code-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+}
+
+.editor-toolbar {
+  padding: 0.75rem 1rem;
+  background: #1e293b;
+  border-bottom: 1px solid #475569;
+
+  .editor-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #94a3b8;
+  }
+}
+
+.editor-container {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.line-numbers {
+  padding: 1rem 0.5rem;
+  padding-bottom: 500px;
+  background: #1e293b;
+  color: #64748b;
+  font-family: 'Fira Code', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: right;
+  user-select: none;
+  overflow-y: hidden;
+  border-right: 1px solid #334155;
+  width: 40px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+
+  .line-number {
+    height: 1.6em;
+  }
+}
+
+.code-wrapper {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.highlight-layer,
+.code-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 1rem;
+  padding-bottom: 500px;
+  border: none;
+  font-family: 'Fira Code', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 24px;
+  font-variant-ligatures: none; /* Disable ligatures that cause width mismatches */
+  letter-spacing: normal;
+  tab-size: 2;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-wrap: normal;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.highlight-layer {
+  z-index: 1;
+  color: #f1f5f9;
+  pointer-events: none;
+  background: transparent;
+  overflow: auto; /* Doit être identique au textarea pour avoir la même hauteur de scrollbar */
+
+  /* Rend les scrollbars invisibles pour le calque de highlight */
+  scrollbar-color: transparent transparent;
+  &::-webkit-scrollbar {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+.code-textarea {
+  z-index: 2;
+  color: transparent;
+  background: transparent;
+  caret-color: #f1f5f9;
+  resize: none;
+  outline: none;
+  overflow: auto;
+
+  &::placeholder {
+    color: #475569;
+  }
+}

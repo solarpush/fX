@@ -1,0 +1,24 @@
+<div class="app-layout">
+  @if (auth.isAuthenticated() !== false) {
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="logo">
+          <a routerLink="/">fX</a>
+        </h1>
+        <nav class="main-nav">
+          <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+          <a routerLink="/templates" routerLinkActive="active">Templates</a>
+          <a routerLink="/assets" routerLinkActive="active">Assets</a>
+        </nav>
+        
+        <div class="header-actions">
+          <button (click)="auth.logout()" class="logout-btn" title="Se déconnecter">🚪</button>
+        </div>
+      </div>
+    </header>
+  }
+
+  <main class="app-main">
+    <router-outlet />
+  </main>
+</div>

@@ -1,0 +1,520 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/solarpush/fx/pkg/invoice/invoice",
+  "$ref": "#/$defs/Invoice",
+  "$defs": {
+    "Address": {
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "postal_code": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "street",
+        "postal_code",
+        "city",
+        "country"
+      ]
+    },
+    "AllowanceCharge": {
+      "properties": {
+        "is_charge": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "reason_code": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "base_amount": {
+          "type": "number"
+        },
+        "percent": {
+          "type": "number"
+        },
+        "vat_rate": {
+          "type": "number"
+        },
+        "vat_amount": {
+          "type": "number"
+        },
+        "vat_category_code": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "is_charge",
+        "amount"
+      ]
+    },
+    "Bank": {
+      "properties": {
+        "iban": {
+          "type": "string"
+        },
+        "bic": {
+          "type": "string"
+        },
+        "bank_name": {
+          "type": "string"
+        },
+        "account_name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "BillingPeriod": {
+      "properties": {
+        "start_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "start_date",
+        "end_date"
+      ]
+    },
+    "Contact": {
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Details": {
+      "properties": {
+        "number": {
+          "type": "string"
+        },
+        "issue_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "due_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "buyer_reference": {
+          "type": "string"
+        },
+        "purchase_order_ref": {
+          "type": "string"
+        },
+        "contract_ref": {
+          "type": "string"
+        },
+        "preceding_invoice_ref": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "number",
+        "issue_date",
+        "currency",
+        "type"
+      ]
+    },
+    "Discount": {
+      "properties": {
+        "percent": {
+          "type": "number"
+        },
+        "base_amount": {
+          "type": "number"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "days_from": {
+          "type": "integer"
+        },
+        "until_date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "percent"
+      ]
+    },
+    "DocumentReference": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type_code": {
+          "type": "string"
+        },
+        "issue_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "line_id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "attachment_uri": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "id"
+      ]
+    },
+    "GlobalID": {
+      "properties": {
+        "scheme_id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "scheme_id",
+        "value"
+      ]
+    },
+    "Invoice": {
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "invoice": {
+          "$ref": "#/$defs/Details"
+        },
+        "seller": {
+          "$ref": "#/$defs/Party"
+        },
+        "buyer": {
+          "$ref": "#/$defs/Party"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/Line"
+          },
+          "type": "array"
+        },
+        "totals": {
+          "$ref": "#/$defs/Totals"
+        },
+        "payment": {
+          "$ref": "#/$defs/Payment"
+        },
+        "allowance_charges": {
+          "items": {
+            "$ref": "#/$defs/AllowanceCharge"
+          },
+          "type": "array"
+        },
+        "billing_period": {
+          "$ref": "#/$defs/BillingPeriod"
+        },
+        "document_references": {
+          "items": {
+            "$ref": "#/$defs/DocumentReference"
+          },
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "$ref": "#/$defs/Note"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "version",
+        "profile",
+        "invoice",
+        "seller",
+        "buyer",
+        "lines",
+        "totals"
+      ]
+    },
+    "Line": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "unit_price": {
+          "type": "number"
+        },
+        "vat_rate": {
+          "type": "number"
+        },
+        "vat_amount": {
+          "type": "number"
+        },
+        "total_excl_vat": {
+          "type": "number"
+        },
+        "total_incl_vat": {
+          "type": "number"
+        },
+        "allowance_charges": {
+          "items": {
+            "$ref": "#/$defs/AllowanceCharge"
+          },
+          "type": "array"
+        },
+        "product_code": {
+          "type": "string"
+        },
+        "product_code_scheme": {
+          "type": "string"
+        },
+        "buyer_product_code": {
+          "type": "string"
+        },
+        "seller_product_code": {
+          "type": "string"
+        },
+        "order_line_reference": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "id",
+        "description",
+        "quantity",
+        "unit_price",
+        "vat_rate",
+        "vat_amount",
+        "total_excl_vat",
+        "total_incl_vat"
+      ]
+    },
+    "Note": {
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "subject_code": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "content"
+      ]
+    },
+    "Party": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "registration": {
+          "type": "string"
+        },
+        "vat_id": {
+          "type": "string"
+        },
+        "contact": {
+          "$ref": "#/$defs/Contact"
+        },
+        "address": {
+          "$ref": "#/$defs/Address"
+        },
+        "bank": {
+          "$ref": "#/$defs/Bank"
+        },
+        "global_id": {
+          "$ref": "#/$defs/GlobalID"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "address"
+      ]
+    },
+    "Payment": {
+      "properties": {
+        "terms": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "iban": {
+          "type": "string"
+        },
+        "due_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payment_means": {
+          "$ref": "#/$defs/PaymentMeans"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "early_discount": {
+          "$ref": "#/$defs/Discount"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "PaymentMeans": {
+      "properties": {
+        "type_code": {
+          "type": "string"
+        },
+        "information": {
+          "type": "string"
+        },
+        "payee_account": {
+          "$ref": "#/$defs/Bank"
+        },
+        "payment_reference": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "type_code"
+      ]
+    },
+    "Totals": {
+      "properties": {
+        "subtotal_excl_vat": {
+          "type": "number"
+        },
+        "allowance_total": {
+          "type": "number"
+        },
+        "charge_total": {
+          "type": "number"
+        },
+        "tax_basis_total": {
+          "type": "number"
+        },
+        "vat_breakdown": {
+          "items": {
+            "$ref": "#/$defs/VatBreakdown"
+          },
+          "type": "array"
+        },
+        "total_vat": {
+          "type": "number"
+        },
+        "total_incl_vat": {
+          "type": "number"
+        },
+        "amount_due": {
+          "type": "number"
+        },
+        "prepaid_amount": {
+          "type": "number"
+        },
+        "rounding_amount": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "subtotal_excl_vat",
+        "vat_breakdown",
+        "total_vat",
+        "total_incl_vat",
+        "amount_due"
+      ]
+    },
+    "VatBreakdown": {
+      "properties": {
+        "rate": {
+          "type": "number"
+        },
+        "taxable_amount": {
+          "type": "number"
+        },
+        "vat_amount": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "rate",
+        "taxable_amount",
+        "vat_amount"
+      ]
+    }
+  }
+}
