@@ -1,9 +1,8 @@
 name: Docker Publish
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   # Permet aussi de lancer le build manuellement
   workflow_dispatch:
 
