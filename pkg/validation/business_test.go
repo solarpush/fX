@@ -477,7 +477,7 @@ func TestValidateBasicFields_MissingRequired(t *testing.T) {
 func TestValidateStrict(t *testing.T) {
 	validInv := &invoice.Invoice{
 		Version: "1.0",
-		Profile: "BASIC",
+		Profile: "EN16931",
 		Invoice: invoice.Details{
 			Number:    "TEST-010",
 			Type:      "380",
@@ -512,6 +512,13 @@ func TestValidateStrict(t *testing.T) {
 			SubtotalExclVat: 100,
 			TotalVat:        20,
 			TotalInclVat:    120,
+			VatBreakdown: []invoice.VatBreakdown{
+				{
+					Rate:          20,
+					TaxableAmount: 100,
+					VatAmount:     20,
+				},
+			},
 		},
 	}
 
@@ -543,7 +550,7 @@ func TestValidateStrict(t *testing.T) {
 func TestValidateWithWarnings(t *testing.T) {
 	inv := &invoice.Invoice{
 		Version: "1.0",
-		Profile: "BASIC",
+		Profile: "EN16931",
 		Invoice: invoice.Details{
 			Number:    "TEST-011",
 			Type:      "380",
@@ -580,6 +587,13 @@ func TestValidateWithWarnings(t *testing.T) {
 			SubtotalExclVat: 100,
 			TotalVat:        20,
 			TotalInclVat:    120,
+			VatBreakdown: []invoice.VatBreakdown{
+				{
+					Rate:          20,
+					TaxableAmount: 100,
+					VatAmount:     20,
+				},
+			},
 		},
 		// Payment manquant
 	}

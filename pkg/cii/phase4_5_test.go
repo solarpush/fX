@@ -37,7 +37,7 @@ func TestGenerate_Phase4Features(t *testing.T) {
 				Street:     "123 Main St",
 				PostalCode: "75001",
 				City:       "Paris",
-				Country:    "FR",
+				Country:    "DE",
 			},
 		},
 		Buyer: invoice.Party{
@@ -51,7 +51,7 @@ func TestGenerate_Phase4Features(t *testing.T) {
 				Street:     "456 Commerce Ave",
 				PostalCode: "69001",
 				City:       "Lyon",
-				Country:    "FR",
+				Country:    "DE",
 			},
 		},
 		Lines: []invoice.Line{

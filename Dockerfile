@@ -11,7 +11,7 @@ RUN npm run build -- --configuration production
 # ----------------------------------------
 # 2. Build du backend Go
 # ----------------------------------------
-FROM golang:alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Installer les dépendances de build
 RUN apk add --no-cache git make ca-certificates wget tar xz

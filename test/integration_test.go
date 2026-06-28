@@ -126,7 +126,7 @@ func TestFullRoundTrip(t *testing.T) {
 func TestDirectConversion(t *testing.T) {
 	jsonData := []byte(`{
 		"version": "1.0",
-		"profile": "BASIC",
+		"profile": "EN16931",
 		"invoice": {
 			"number": "DIRECT-001",
 			"type": "380",
@@ -167,6 +167,13 @@ func TestDirectConversion(t *testing.T) {
 		],
 		"totals": {
 			"subtotal_excl_vat": 99.99,
+			"vat_breakdown": [
+				{
+					"rate": 20,
+					"taxable_amount": 99.99,
+					"vat_amount": 20.00
+				}
+			],
 			"total_vat": 20.00,
 			"total_incl_vat": 119.99
 		}

@@ -1,51 +1,32 @@
-# fX - Facture-X Generator
-
-[![Go Version](https://img.shields.io/badge/Go-1.21+-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
-Générateur Facture-X (ZUGFeRD) en Go. Génère des factures électroniques conformes aux standards **Facture-X 1.08**, **EN16931** et **PDF/A-3**.
 # fX - Factur-X / EN16931 Generation Pipeline
 
-Une solution open-source complète (CLI, API Server & Web UI) pour générer, valider et extraire des factures électroniques au standard **Factur-X (ZUGFeRD 2.4 / EN16931)**.
+A complete open-source solution (CLI, API Server & Web UI) to generate, validate, and extract electronic invoices compliant with the Factur-X (ZUGFeRD 2.4 / EN16931) standard.
 
-![fX Builder UI](./docs/images/builder-preview.png)
+## Capabilities
 
-## 🌟 Fonctionnalités
+* PDF/A-3 Generator: Compilation of highly customizable templates using Typst.
+* CII XML Builder: Strict creation of the `factur-x.xml` file compliant with the EN16931 standard.
+* API Server: Easy integration via JSON HTTP requests.
+* Web Builder UI (Angular): Modern interface to create invoices, manage templates, and preview live.
+* CLI Tool: For integration into CI/CD pipelines or system scripts.
+* Strict Validation: Verification of business rules. Only the EN16931 and EXTENDED profiles are supported.
+* High Performance: Highly concurrent Go architecture. Capable of generating ~165 full Factur-X PDFs per second under load with sub-600ms response times for 100 concurrent requests, avoiding the memory overhead of headless browsers.
+* Supported Document Types: Handles standard invoices (380), credit notes (381), corrected invoices (384), prepaid invoices (386), self-billed invoices (389), and proforma/information invoices (751).
 
-*   **PDF/A-3 Generator** : Compilation de templates hautement personnalisables via Typst.
-*   **CII XML Builder** : Création rigoureuse du XML `factur-x.xml` conforme à la norme EN16931.
-*   **API Serveur** : Intégration facile via requêtes HTTP JSON.
-*   **Web Builder UI (Angular)** : Interface moderne pour créer vos factures, gérer les templates et prévisualiser en direct.
-*   **CLI Tool** : Pour l'intégration dans des pipelines CI/CD ou des scripts système.
-*   **Validation stricte** : Vérification des règles métier (Note : seuls les profils `EN16931` et `EXTENDED` sont activement supportés pour le moment).
-*   **Assistant IA** : Édition intelligente de templates assistée par l'IA.
+## Quick Local Setup (Docker Compose)
 
-## 🏗️ Architecture du Projet
-
-*   **`cmd/fx/`** : CLI principal
-*   **`cmd/server/`** : Point d'entrée de l'API HTTP Backend
-*   **`pkg/`** : Core Librairie (Génération PDF, Typst, Validation CII)
-*   **`ng_web/`** : Frontend Angular (Application Builder Web UI)
-*   **`templates-custom/`** : Répertoire de stockage local des templates `.typ`
-
-## 🚀 Démarrage rapide (Développement & Utilisation)
-
-L'intégralité du projet (Serveur Go, Web UI Angular et Typst) est packagée pour tourner directement avec Docker Compose. C'est la seule commande dont vous avez besoin :
+The entire project (Go Server, Angular Web UI, and Typst) is packaged to run directly with Docker Compose. This is all you need for local development and testing:
 
 ```bash
 git clone https://github.com/solarpush/fX.git
 cd fX
-
-# Démarrer le backend et le frontend en une commande
 docker-compose up -d
 ```
 
-- **Interface de création (Builder UI)** : disponible sur `http://localhost:4200`
-- **API HTTP Backend** : disponible sur `http://localhost:8080/api/v1`
+- Web Builder UI: Available at `http://localhost:4200`
+- API HTTP Backend: Available at `http://localhost:8080/api/v1`
 
-## 📖 Utilisation de l'API HTTP
-
-Le backend propose un endpoint POST pour générer directement une facture PDF/A-3 Factur-X avec XML embarqué.
+### API Usage Example
 
 **POST** `/api/v1/generate`
 
@@ -72,81 +53,112 @@ Le backend propose un endpoint POST pour générer directement une facture PDF/A
 }
 ```
 
-## 💻 Utilisation du CLI
+## Cloud Run Deployment (with Cloud Storage)
 
+For a serverless deployment on Google Cloud Platform, you can deploy the Docker container to Cloud Run and connect it to a Cloud Storage bucket for persistence.
+
+1. Push the Docker image to Artifact Registry:
 ```bash
-# Convertir un JSON en Factur-X PDF
-./bin/fx convert invoice.json invoice.pdf
-
-# Extraire le XML d'un PDF Factur-X existant
-./bin/fx extract invoice.pdf
-
-# Valider la structure d'un fichier JSON
-./bin/fx validate invoice.json
+docker build -t gcr.io/YOUR_PROJECT_ID/fx-server .
+docker push gcr.io/YOUR_PROJECT_ID/fx-server
 ```
 
-## 🛠️ Modèles et Templates (Typst)
+2. Deploy to Cloud Run:
+```bash
+gcloud run deploy fx-server \
+  --image gcr.io/YOUR_PROJECT_ID/fx-server \
+  --platform managed \
+  --allow-unauthenticated \
+  --env-vars-file .env.production
+```
+*(Make sure the Cloud Run service account has Storage Object Admin permissions on the bucket)*
 
-Les factures sont compilées à l'aide de **Typst**, une alternative moderne et très performante à LaTeX.
-Dans l'UI (ou dans le dossier `./templates-custom/`), vous pouvez définir le profil cible et les capacités de vos templates directement via des commentaires au début de votre code Typst :
+## VPS Deployment (Docker Compose + Reverse Proxy)
 
-```typst
-// @profile: EN16931
-// @capabilities: vat_breakdown,bank_info
+For a traditional VPS deployment (e.g., Ubuntu/Debian), you can run the application using `docker-compose` behind a reverse proxy (like Nginx or Traefik) to handle SSL/TLS and proper networking.
 
-#set page(paper: "a4")
-...
+1. Ensure Docker and Docker Compose are installed on your VPS.
+2. Clone the repository and configure your `.env` file (set strong authentication secrets if exposing the API directly).
+3. Use a standard `docker-compose.yml` that binds to a specific bridge network, avoiding exposing ports directly to the public internet:
+
+```yaml
+version: "3.8"
+services:
+  fx-server:
+    build: .
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - STORAGE_TYPE=local
+      - STORAGE_LOCAL_PATH=/storage
+    volumes:
+      - ./storage:/storage
+      - ./templates-custom:/templates-custom
+    restart: unless-stopped
+    networks:
+      - proxy_network
+
+networks:
+  proxy_network:
+    external: true
 ```
 
-## 📜 Standards & Normes respectées
+4. Configure your Reverse Proxy (e.g., Nginx) to forward traffic to the `fx-server` container on port 8080, and secure it with Let's Encrypt.
+```nginx
+server {
+    listen 80;
+    server_name fx.yourdomain.com;
 
-- **Facture-X 1.08** (Spécification franco-allemande)
-- **ZUGFeRD 2.4**
-- **EN16931** (European e-invoicing standard)
-- **PDF/A-3** (ISO 19005-3)
-- **UN/CEFACT CII D22B** (Cross Industry Invoice)
+    location / {
+        proxy_pass http://fx-server:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
 
-### Profils Factur-X supportés
+## Environment Variables
 
-Actuellement, l'implémentation se concentre sur les profils les plus complets et standards :
-- ✅ **EN16931** : Profil standard européen (recommandé pour la majorité des cas d'usage).
-- ✅ **EXTENDED** : Extension du profil EN16931 pour des besoins métiers spécifiques.
-- ⏳ *Les profils inférieurs (MINIMUM, BASIC WL, BASIC) seront implémentés dans une version future.*
+The application can be configured via environment variables. Here are the most important ones:
 
-### Gestion des types de factures (Codes UNTDID 1001)
+### Server & Security
+- `PORT` (default: 8080): The port the API listens on.
+- `AUTH_ENABLED` (default: false): Enable API key and password authentication.
+- `AUTH_API_KEY`: The API key required to access the backend if auth is enabled.
+- `AUTH_PASSWORD`: The password for the Web UI if auth is enabled.
+- `AUTH_JWT_SECRET`: Secret key used for signing JWTs in the Web UI.
 
-L'API et le générateur respectent strictement les règles métiers associées aux différents types de documents prévus par la norme EN 16931 :
+### Storage
+- `STORAGE_TYPE` (default: local): Where to store generated PDFs. Options: `local`, `s3`, `gcs`, `azure`.
+- `STORAGE_LOCAL_PATH` (default: ./storage): Path for local storage.
 
-- **380 (Facture standard)** : Flux nominal, aucune spécificité.
-- **381 (Avoir) & 384 (Facture Rectificative)** : 
-  - *Références croisées* : Vous pouvez passer la référence de la facture d'origine dans le champ `preceding_invoice_ref`, elle sera automatiquement mappée vers `InvoiceReferencedDocument` (BT-25).
-  - *Montants absolus* : Conformément à la norme européenne, les montants (lignes, TVA, net) des avoirs doivent figurer **en positif**. Le générateur convertit silencieusement les montants transmis en valeur absolue (`math.Abs`).
-- **386 (Facture d'acompte)** : Sa structure est identique à une facture 380. Cependant, lors de l'émission de la facture de solde (380), vous pouvez déduire l'acompte via le champ `totals.prepaid_amount` (BT-113).
-- **389 (Autofacturation / Self-billing)** : Lorsque le client émet la facture au nom du vendeur, le système ajoute automatiquement la mention légale obligatoire `Autofacturation` via une balise `<ram:IncludedNote>`.
-- **751 (Facture pour information / Proforma)** : Document supporté pour des échanges privés (évaluation, douane), mais qui sera catégoriquement rejeté par les plateformes de dématérialisation fiscales comme Chorus Pro en France. À utiliser avec précaution.
+**For S3/MinIO/GCS (when STORAGE_TYPE=s3 or gcs):**
+- `S3_ENDPOINT`: URL of the storage endpoint (e.g., `https://storage.googleapis.com`).
+- `S3_BUCKET`: Name of your bucket.
+- `S3_ACCESS_KEY` & `S3_SECRET_KEY`: Your storage credentials.
 
-## ⚡ Performances (Benchmark)
+### Typst & Templates
+- `TEMPLATES_PATH`: Directory containing your custom `.typ` templates.
+- `TYPST_FONT_PATHS`: Optional directory containing custom fonts for Typst.
+- `TYPST_ROOT`: Virtual root directory for Typst (useful for resolving absolute image paths in templates).
 
-L'architecture (Go + processus Typst parallèles) est conçue pour être **fortement concurrentielle et scalable**.
+### AI Generation (Optional)
+- `AI_PROVIDER` (default: openai): AI provider. Options: `openai`, `ollama`.
+- `AI_BASE_URL`: API URL for the provider (e.g., `https://api.deepseek.com` or local Ollama).
+- `AI_MODEL`: The LLM model to use (e.g., `gemini-3.5-flash`, `deepseek-coder`).
+- `AI_API_KEY`: Your API key for the AI provider.
 
-Voici les résultats d'un stress test d'API (`ab`) avec **100 requêtes concurrentes simultanées** pour la génération Factur-X complète (Typst + XML embarqué) :
+## Standards & Compliance
 
-- **Débit total** : ~165 PDF générés par seconde (soit ~14,3 millions / jour).
-- **Temps de réponse (sous forte charge)** : 583 ms en moyenne (avec 100 requêtes simultanées).
-- **Stabilité** : 0 crash, 0 erreur de collision. L'orchestrateur Go isole parfaitement chaque génération.
-- **Ressources** : Le démarrage extrêmement rapide de Typst couplé à sa faible consommation de RAM permet au serveur de traiter massivement en parallèle là où d'autres solutions (Puppeteer, Headless Chrome) s'étoufferaient.
+- Factur-X 1.08
+- ZUGFeRD 2.4
+- EN16931 (European e-invoicing standard)
+- PDF/A-3 (ISO 19005-3)
+- UN/CEFACT CII D22B (Cross Industry Invoice)
 
-*Note : En mono-thread (1 seule requête à la fois), une facture complète se génère en moyenne en moins de 150ms.*
+## License
+fX is licensed under the **GNU AGPL-3.0 License**.
 
-## 📄 Licence
-MIT.
-
-## 🤝 Contributing
-
-Les contributions sont les bienvenues ! Voir [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## 🙏 Remerciements
-
-- FNFE-MPE pour les spécifications Facture-X
-- AIFE pour la documentation ZUGFeRD
-- CEN TC434 pour la norme EN16931
+For commercial use, embedding in proprietary software, or if you cannot comply with the AGPL-3.0 terms (e.g., you do not wish to open-source your entire application), please contact us to purchase a commercial license.

@@ -14,11 +14,13 @@ all: build
 # Build for current platform
 build:
 	@echo "Building $(BINARY_NAME)..."
-	@go build $(LDFLAGS) -o $(BINARY_NAME) ./cmd/fx
+	@mkdir -p bin
+	@go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/fx
 
 build-server:
 	@echo "Building $(BINARY_NAME) server..."
-	@go build $(LDFLAGS) -o $(BINARY_NAME)-server ./cmd/server
+	@mkdir -p bin
+	@go build $(LDFLAGS) -o bin/$(BINARY_NAME)-server ./cmd/server
 
 # Build for all platforms
 build-all: clean
@@ -34,7 +36,7 @@ build-all: clean
 # Clean
 clean:
 	@echo "Cleaning..."
-	@rm -rf $(BUILD_DIR) $(BINARY_NAME)
+	@rm -rf $(BUILD_DIR) bin/ $(BINARY_NAME) $(BINARY_NAME)-server server
 	@go clean
 	@echo "Clean complete!"
 
