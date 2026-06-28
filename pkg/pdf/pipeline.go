@@ -72,6 +72,7 @@ func (fp *FacturXPipeline) Generate(inv *invoice.Invoice, options *GenerateOptio
 	}
 
 	// 5. Créer un dossier temporaire pour l'XML
+	os.MkdirAll("./tmp", 0755)
 	tmpDir, err := os.MkdirTemp("./tmp", "facturx-*")
 	if err != nil {
 		return nil, fmt.Errorf("erreur création tmpdir: %w", err)
