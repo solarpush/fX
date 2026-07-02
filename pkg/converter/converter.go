@@ -28,13 +28,13 @@ func JSONToFactureX(jsonPath, pdfPath string, templatePath string, validate bool
 	if err != nil {
 		return fmt.Errorf("failed to init pipeline: %w", err)
 	}
-	
+
 	options := &pdf.GenerateOptions{TemplatePath: templatePath}
 	pdfData, err := pipeline.Generate(inv, options)
 	if err != nil {
 		return fmt.Errorf("pipeline generation failed: %w", err)
 	}
-	
+
 	if err := os.WriteFile(pdfPath, pdfData, 0644); err != nil {
 		return fmt.Errorf("failed to write PDF: %w", err)
 	}

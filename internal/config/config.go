@@ -8,12 +8,20 @@ import (
 
 // Config contient toute la configuration de l'application
 type Config struct {
-	Server  ServerConfig
-	Storage StorageConfig
-	WebUI   WebUIConfig
-	AI      AIConfig
-	Auth    AuthConfig
-	Verbose bool
+	Server   ServerConfig
+	Storage  StorageConfig
+	WebUI    WebUIConfig
+	AI       AIConfig
+	Auth     AuthConfig
+	Features FeaturesConfig
+	Verbose  bool
+}
+
+// FeaturesConfig regroupe les feature flags de l'application
+type FeaturesConfig struct {
+	// AllowCustomTemplates active le mode "template Typst custom" (découplé de Factur-X):
+	// endpoints /custom/* et page d'édition dédiée côté UI.
+	AllowCustomTemplates bool
 }
 
 // WebUIConfig configuration de l'interface Angular servie par le backend
@@ -105,13 +113,16 @@ func Load() (*Config, error) {
 		},
 		WebUI: WebUIConfig{
 			Enabled: getEnvAsBool("WEB_UI_ENABLED", true), // Activé par défaut
-			Path:    getEnv("WEB_UI_PATH", "./web/ng"),   // Chemin des statiques d'Angular
+			Path:    getEnv("WEB_UI_PATH", "./web/ng"),    // Chemin des statiques d'Angular
 		},
 		AI: AIConfig{
 			Provider: getEnv("AI_PROVIDER", "ollama"),
 			APIKey:   getEnv("AI_API_KEY", ""),
 			BaseURL:  getEnv("AI_BASE_URL", "http://localhost:11434"),
 			Model:    getEnv("AI_MODEL", "llama3"),
+		},
+		Features: FeaturesConfig{
+			AllowCustomTemplates: getEnvAsBool("ALLOW_CUSTOM_TEMPLATES", false),
 		},
 		Verbose: getEnvAsBool("VERBOSE", false),
 	}

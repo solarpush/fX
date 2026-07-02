@@ -34,7 +34,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /bin/fx-s
 FROM alpine:latest
 
 # Installer les dépendances runtime et quelques polices standard
-RUN apk add --no-cache ca-certificates tzdata fontconfig ttf-liberation ttf-dejavu ttf-opensans
+# Installer les dépendances runtime et quelques polices standard.
+# Familles disponibles ensuite pour Typst : Liberation Sans/Serif/Mono,
+# DejaVu Sans/Serif/Sans Mono, Open Sans, Noto Sans/Serif (font-noto).
+RUN apk add --no-cache ca-certificates tzdata fontconfig ttf-liberation ttf-dejavu ttf-opensans font-noto
 
 # Installer Typst
 ARG TYPST_VERSION=0.15.0
@@ -74,6 +77,7 @@ ENV PORT=8080 \
     READ_TIMEOUT=30 \
     WRITE_TIMEOUT=30 \
     SHUTDOWN_TIMEOUT=5 \
+    ALLOW_CUSTOM_TEMPLATES=false \
     TYPST_ROOT=/
 
 # Exposer le port

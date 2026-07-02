@@ -89,8 +89,20 @@ func (tb *TypstBinary) CompileToPDF(typContent []byte, outputPath string) error 
 	return nil
 }
 
-// CompileFileDirect compile un fichier Typst existant directement vers PDF
+// CompileFileDirect compile un fichier Typst existant directement vers PDF (PDF/A-3b).
 func (tb *TypstBinary) CompileFileDirect(inputPath, outputPath string) error {
+	return tb.compileFileDirect(inputPath, outputPath, true)
+}
+
+// CompileFileDirectPlain compile un fichier Typst vers un PDF standard (sans
+// contrainte PDF/A-3b). Utilisé pour les templates custom : évite l'intégration
+// complète des polices imposée par PDF/A, ce qui allège le PDF et accélère la
+// compilation.
+func (tb *TypstBinary) CompileFileDirectPlain(inputPath, outputPath string) error {
+	return tb.compileFileDirect(inputPath, outputPath, false)
+}
+
+func (tb *TypstBinary) compileFileDirect(inputPath, outputPath string, pdfA bool) error {
 	// Vérifier que le fichier d'entrée existe
 	if _, err := os.Stat(inputPath); os.IsNotExist(err) {
 		log.Printf("[ERROR] Input file does not exist: %s", inputPath)
@@ -111,7 +123,9 @@ func (tb *TypstBinary) CompileFileDirect(inputPath, outputPath string) error {
 		root = "." // Par défaut, le répertoire courant du projet
 	}
 	args = append(args, "--root", root)
-	args = append(args, "--pdf-standard", "a-3b")
+	if pdfA {
+		args = append(args, "--pdf-standard", "a-3b")
+	}
 	args = append(args, inputPath, outputPath)
 
 	// Compiler directement le fichier d'entrée

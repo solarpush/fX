@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth';
+import { customTemplatesGuard } from './core/custom-guard';
 
 export const routes: Routes = [
   {
@@ -64,6 +65,32 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/assets/assets-manager/assets-manager').then((m) => m.AssetsManager),
     title: 'Assets - fX',
+  },
+
+  // Custom templates routes (feature-flag ALLOW_CUSTOM_TEMPLATES)
+  {
+    path: 'custom',
+    canActivate: [authGuard, customTemplatesGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/custom/custom-list/custom-list').then((m) => m.CustomList),
+        title: 'Templates custom - fX',
+      },
+      {
+        path: 'new',
+        loadComponent: () =>
+          import('./features/custom/custom-editor/custom-editor').then((m) => m.CustomEditor),
+        title: 'Nouveau template custom - fX',
+      },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./features/custom/custom-editor/custom-editor').then((m) => m.CustomEditor),
+        title: 'Éditer template custom - fX',
+      },
+    ],
   },
 
   // 404 Not Found

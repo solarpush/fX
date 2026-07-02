@@ -81,6 +81,20 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 	// Route IA
 	protectedApi.HandleFunc("/ai/generate", handler.HandleAIGenerate).Methods(http.MethodPost, http.MethodOptions)
 
+	// --- Routes Custom Templates (feature-flag ALLOW_CUSTOM_TEMPLATES) ---
+	// Scope isolé du flux Factur-X : template Typst libre + JSON Schema.
+	if cfg.Features.AllowCustomTemplates {
+		protectedApi.HandleFunc("/custom/templates", handler.HandleListCustomTemplates).Methods(http.MethodGet, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/templates", handler.HandleCreateCustomTemplate).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/templates/{id}", handler.HandleGetCustomTemplate).Methods(http.MethodGet, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/templates/{id}", handler.HandleUpdateCustomTemplate).Methods(http.MethodPut, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/templates/{id}", handler.HandleDeleteCustomTemplate).Methods(http.MethodDelete, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/validate", handler.HandleCustomValidate).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/preview", handler.HandleCustomPreview).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/generate", handler.HandleCustomGenerate).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/custom/ai/generate", handler.HandleCustomAIGenerate).Methods(http.MethodPost, http.MethodOptions)
+	}
+
 	// Routes des images
 	protectedApi.HandleFunc("/images", handler.HandleListImages).Methods(http.MethodGet, http.MethodOptions)
 	protectedApi.HandleFunc("/images", handler.HandleUploadImage).Methods(http.MethodPost, http.MethodOptions)
@@ -93,6 +107,9 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 	// Health check (public)
 	api.HandleFunc("/health", handler.HandleHealth).Methods(http.MethodGet)
 
+	// Configuration publique (feature flags) — utilisée par le frontend
+	api.HandleFunc("/config", handler.HandlePublicConfig).Methods(http.MethodGet, http.MethodOptions)
+
 	// Servir le dossier d'images publiquement
 	imagesPath := os.Getenv("IMAGES_PATH")
 	if imagesPath == "" {
@@ -103,8 +120,8 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 		}
 	}
 	// S'assurer que le dossier existe
-	os.MkdirAll(imagesPath, 0755)
-	
+	_ = os.MkdirAll(imagesPath, 0755)
+
 	imagesFs := http.FileServer(http.Dir(imagesPath))
 	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imagesFs))
 
@@ -115,7 +132,7 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 		if wd, err := os.Getwd(); err == nil && filepath.Base(wd) == "bin" {
 			webPath = filepath.Join(filepath.Dir(wd), "web", "ng")
 		}
-		
+
 		spa := spaHandler{staticPath: webPath, indexPath: "index.html"}
 		r.PathPrefix("/").Handler(spa)
 	}

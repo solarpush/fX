@@ -1,11 +1,11 @@
 package cii
 
 import (
-"strings"
-"testing"
-"time"
+	"strings"
+	"testing"
+	"time"
 
-"github.com/solarpush/fx/pkg/invoice"
+	"github.com/solarpush/fx/pkg/invoice"
 )
 
 func TestGenerate_MinimalInvoice(t *testing.T) {

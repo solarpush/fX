@@ -4,14 +4,14 @@ A complete open-source solution (CLI, API Server & Web UI) to generate, validate
 
 ## Capabilities
 
-* PDF/A-3 Generator: Compilation of highly customizable templates using Typst.
-* CII XML Builder: Strict creation of the `factur-x.xml` file compliant with the EN16931 standard.
-* API Server: Easy integration via JSON HTTP requests.
-* Web Builder UI (Angular): Modern interface to create invoices, manage templates, and preview live.
-* CLI Tool: For integration into CI/CD pipelines or system scripts.
-* Strict Validation: Verification of business rules. Only the EN16931 and EXTENDED profiles are supported.
-* High Performance: Highly concurrent Go architecture. Capable of generating ~165 full Factur-X PDFs per second under load with sub-600ms response times for 100 concurrent requests, avoiding the memory overhead of headless browsers.
-* Supported Document Types: Handles standard invoices (380), credit notes (381), corrected invoices (384), prepaid invoices (386), self-billed invoices (389), and proforma/information invoices (751).
+- PDF/A-3 Generator: Compilation of highly customizable templates using Typst.
+- CII XML Builder: Strict creation of the `factur-x.xml` file compliant with the EN16931 standard.
+- API Server: Easy integration via JSON HTTP requests.
+- Web Builder UI (Angular): Modern interface to create invoices, manage templates, and preview live.
+- CLI Tool: For integration into CI/CD pipelines or system scripts.
+- Strict Validation: Verification of business rules. Only the EN16931 and EXTENDED profiles are supported.
+- High Performance: Highly concurrent Go architecture. Capable of generating ~165 full Factur-X PDFs per second under load with sub-600ms response times for 100 concurrent requests, avoiding the memory overhead of headless browsers.
+- Supported Document Types: Handles standard invoices (380), credit notes (381), corrected invoices (384), prepaid invoices (386), self-billed invoices (389), and proforma/information invoices (751).
 
 ## Quick Local Setup (Docker Compose)
 
@@ -58,12 +58,14 @@ docker-compose up -d
 For a serverless deployment on Google Cloud Platform, you can deploy the Docker container to Cloud Run and connect it to a Cloud Storage bucket for persistence.
 
 1. Push the Docker image to Artifact Registry:
+
 ```bash
 docker build -t gcr.io/YOUR_PROJECT_ID/fx-server .
 docker push gcr.io/YOUR_PROJECT_ID/fx-server
 ```
 
 2. Deploy to Cloud Run:
+
 ```bash
 gcloud run deploy fx-server \
   --image gcr.io/YOUR_PROJECT_ID/fx-server \
@@ -71,7 +73,8 @@ gcloud run deploy fx-server \
   --allow-unauthenticated \
   --env-vars-file .env.production
 ```
-*(Make sure the Cloud Run service account has Storage Object Admin permissions on the bucket)*
+
+_(Make sure the Cloud Run service account has Storage Object Admin permissions on the bucket)_
 
 ## VPS Deployment (Docker Compose + Reverse Proxy)
 
@@ -104,6 +107,7 @@ networks:
 ```
 
 4. Configure your Reverse Proxy (e.g., Nginx) to forward traffic to the `fx-server` container on port 8080, and secure it with Let's Encrypt.
+
 ```nginx
 server {
     listen 80;
@@ -124,6 +128,7 @@ server {
 The application can be configured via environment variables. Here are the most important ones:
 
 ### Server & Security
+
 - `PORT` (default: 8080): The port the API listens on.
 - `AUTH_ENABLED` (default: false): Enable API key and password authentication.
 - `AUTH_API_KEY`: The API key required to access the backend if auth is enabled.
@@ -131,20 +136,24 @@ The application can be configured via environment variables. Here are the most i
 - `AUTH_JWT_SECRET`: Secret key used for signing JWTs in the Web UI.
 
 ### Storage
+
 - `STORAGE_TYPE` (default: local): Where to store generated PDFs. Options: `local`, `s3`, `gcs`, `azure`.
 - `STORAGE_LOCAL_PATH` (default: ./storage): Path for local storage.
 
 **For S3/MinIO/GCS (when STORAGE_TYPE=s3 or gcs):**
+
 - `S3_ENDPOINT`: URL of the storage endpoint (e.g., `https://storage.googleapis.com`).
 - `S3_BUCKET`: Name of your bucket.
 - `S3_ACCESS_KEY` & `S3_SECRET_KEY`: Your storage credentials.
 
 ### Typst & Templates
+
 - `TEMPLATES_PATH`: Directory containing your custom `.typ` templates.
 - `TYPST_FONT_PATHS`: Optional directory containing custom fonts for Typst.
 - `TYPST_ROOT`: Virtual root directory for Typst (useful for resolving absolute image paths in templates).
 
 ### AI Generation (Optional)
+
 - `AI_PROVIDER` (default: openai): AI provider. Options: `openai`, `ollama`.
 - `AI_BASE_URL`: API URL for the provider (e.g., `https://api.deepseek.com` or local Ollama).
 - `AI_MODEL`: The LLM model to use (e.g., `gemini-3.5-flash`, `deepseek-coder`).
@@ -159,6 +168,7 @@ The application can be configured via environment variables. Here are the most i
 - UN/CEFACT CII D22B (Cross Industry Invoice)
 
 ## License
+
 fX is licensed under the **GNU AGPL-3.0 License**.
 
 For commercial use, embedding in proprietary software, or if you cannot comply with the AGPL-3.0 terms (e.g., you do not wish to open-source your entire application), please contact us to purchase a commercial license.

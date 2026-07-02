@@ -8,6 +8,9 @@
         <nav class="main-nav">
           <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
           <a routerLink="/templates" routerLinkActive="active">Templates</a>
+          @if (config.allowCustom()) {
+            <a routerLink="/custom" routerLinkActive="active">Custom</a>
+          }
           <a routerLink="/assets" routerLinkActive="active">Assets</a>
         </nav>
         

@@ -27,7 +27,7 @@ func getImagesDir() string {
 			imagesPath = filepath.Join(filepath.Dir(wd), "images")
 		}
 	}
-	os.MkdirAll(imagesPath, 0755)
+	_ = os.MkdirAll(imagesPath, 0755)
 	return imagesPath
 }
 
@@ -50,7 +50,7 @@ func (h *Handler) HandleListImages(w http.ResponseWriter, r *http.Request) {
 		if f.IsDir() {
 			continue
 		}
-		
+
 		ext := strings.ToLower(filepath.Ext(f.Name()))
 		if ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".svg" || ext == ".gif" {
 			info, err := f.Info()
@@ -68,7 +68,7 @@ func (h *Handler) HandleListImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(images)
+	_ = json.NewEncoder(w).Encode(images)
 }
 
 // HandleUploadImage permet d'uploader une nouvelle image
@@ -79,7 +79,7 @@ func (h *Handler) HandleUploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Limite à 10 MB
-	r.ParseMultipartForm(10 << 20)
+	_ = r.ParseMultipartForm(10 << 20)
 
 	file, handler, err := r.FormFile("image")
 	if err != nil {
@@ -127,7 +127,7 @@ func (h *Handler) HandleUploadImage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(imageInfo)
+	_ = json.NewEncoder(w).Encode(imageInfo)
 }
 
 // HandleDeleteImage supprime une image

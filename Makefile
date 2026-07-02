@@ -61,7 +61,7 @@ deps:
 # Format code
 fmt:
 	@echo "Formatting code..."
-	@go fmt ./...
+	@gofmt -s -w .
 	@echo "Format complete!"
 
 # Lint

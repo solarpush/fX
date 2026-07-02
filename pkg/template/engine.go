@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -114,15 +115,15 @@ func formatValue(key string, value interface{}) string {
 	if floatVal, ok := value.(float64); ok {
 		lowerKey := strings.ToLower(key)
 		// Si c'est un montant, on force 2 décimales
-		if strings.Contains(lowerKey, "price") || 
-		   strings.Contains(lowerKey, "amount") || 
-		   strings.Contains(lowerKey, "total") || 
-		   strings.Contains(lowerKey, "rate") ||
-		   strings.Contains(lowerKey, "tva") ||
-		   strings.Contains(lowerKey, "vat") {
+		if strings.Contains(lowerKey, "price") ||
+			strings.Contains(lowerKey, "amount") ||
+			strings.Contains(lowerKey, "total") ||
+			strings.Contains(lowerKey, "rate") ||
+			strings.Contains(lowerKey, "tva") ||
+			strings.Contains(lowerKey, "vat") {
 			return fmt.Sprintf("%.2f", floatVal)
 		}
-		
+
 		// Pour les autres nombres (comme quantity), on affiche sans décimale si c'est entier
 		if floatVal == float64(int64(floatVal)) {
 			return fmt.Sprintf("%d", int64(floatVal))
@@ -146,7 +147,7 @@ func (e *Engine) replaceVariables(content string) string {
 
 		path := strings.TrimSpace(matches[1])
 		value := e.getNestedValue(path)
-		
+
 		// Extraire le nom de la variable (dernier élément du chemin) pour formater correctement
 		parts := strings.Split(path, ".")
 		keyName := parts[len(parts)-1]
@@ -186,7 +187,7 @@ func (e *Engine) processIfs(content string) (string, error) {
 		ifContent := matches[2]
 
 		value := e.getNestedValue(varPath)
-		
+
 		isTruthy := false
 		if value != nil {
 			switch v := value.(type) {
@@ -215,3 +216,84 @@ func (e *Engine) processIfs(content string) (string, error) {
 
 	return result, nil
 }
+
+// tokenRegex capture toutes les balises Handlebars {{ ... }} (variables, #each,
+// #if, /each, /if).
+var tokenRegex = regexp.MustCompile(`\{\{([^}]+)\}\}`)
+
+// ExtractReferences analyse un template et renvoie la liste triée et dédupliquée
+// des chemins de données référencés. Les références à l'intérieur d'une boucle
+// {{#each lines}} sont préfixées par le nom du tableau suivi de "[]" (ex:
+// "lines[].description") afin de correspondre aux chemins produits par
+// schema.CollectPaths. Les blocs de fermeture et les helpers sont ignorés.
+func ExtractReferences(templateContent string) []string {
+	set := map[string]struct{}{}
+	var scopes []string // pile des tableaux #each en cours
+
+	for _, m := range tokenRegex.FindAllStringSubmatch(templateContent, -1) {
+		expr := strings.TrimSpace(m[1])
+		if expr == "" {
+			continue
+		}
+
+		switch {
+		case strings.HasPrefix(expr, "#each"):
+			arr := strings.TrimSpace(strings.TrimPrefix(expr, "#each"))
+			arr = qualify(arr, scopes)
+			if arr != "" {
+				set[arr+"[]"] = struct{}{}
+			}
+			scopes = append(scopes, arr)
+		case strings.HasPrefix(expr, "/each"):
+			if len(scopes) > 0 {
+				scopes = scopes[:len(scopes)-1]
+			}
+		case strings.HasPrefix(expr, "#if"):
+			cond := strings.TrimSpace(strings.TrimPrefix(expr, "#if"))
+			if p := qualify(cond, scopes); p != "" {
+				set[p] = struct{}{}
+			}
+		case strings.HasPrefix(expr, "/if"), strings.HasPrefix(expr, "else"), strings.HasPrefix(expr, "!"):
+			// Fermetures et commentaires: rien à collecter.
+		default:
+			if p := qualify(expr, scopes); p != "" {
+				set[p] = struct{}{}
+			}
+		}
+	}
+
+	out := make([]string, 0, len(set))
+	for p := range set {
+		out = append(out, p)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// qualify normalise une référence: ignore les chemins non-données (guillemets,
+// fonctions) et, si l'on est dans une boucle, préfixe les clés relatives par le
+// tableau courant ("description" -> "lines[].description").
+func qualify(ref string, scopes []string) string {
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return ""
+	}
+	// Ignorer tout ce qui n'est pas un simple chemin a.b.c (helpers, littéraux).
+	if !identRegex.MatchString(ref) {
+		return ""
+	}
+	// Une référence absolue commençant par un scope connu reste inchangée.
+	if len(scopes) > 0 {
+		current := scopes[len(scopes)-1]
+		if current != "" {
+			base := strings.SplitN(current, ".", 2)[0]
+			if ref == base || strings.HasPrefix(ref, base+".") {
+				return ref
+			}
+			return current + "[]." + ref
+		}
+	}
+	return ref
+}
+
+var identRegex = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)

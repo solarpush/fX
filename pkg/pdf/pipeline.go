@@ -72,7 +72,7 @@ func (fp *FacturXPipeline) Generate(inv *invoice.Invoice, options *GenerateOptio
 	}
 
 	// 5. Créer un dossier temporaire pour l'XML
-	os.MkdirAll("./tmp", 0755)
+	_ = os.MkdirAll("./tmp", 0755)
 	tmpDir, err := os.MkdirTemp("./tmp", "facturx-*")
 	if err != nil {
 		return nil, fmt.Errorf("erreur création tmpdir: %w", err)
@@ -89,7 +89,7 @@ func (fp *FacturXPipeline) Generate(inv *invoice.Invoice, options *GenerateOptio
 	// On utilise filepath.ToSlash et on préfixe par "/" pour que Typst cherche depuis la racine du projet (--root)
 	relXmlPath := "/" + filepath.ToSlash(xmlPath)
 	attachCmd := fmt.Sprintf("\n#pdf.attach(\"%s\", relationship: \"data\", mime-type: \"text/xml\", description: \"Factur-X Invoice\")\n", relXmlPath)
-	filledTemplate += attachCmd
+	filledTemplate += "\n#pdf.attach(\"/license.txt\", bytes(\"Powered by fX\"), relationship: \"supplement\", description: \"License Info\", mime-type: \"text/plain\")\n" + attachCmd
 
 	// 7. Compiler le template en PDF avec Typst (incluant l'attachement XML)
 	pdfContent, err := fp.typstBinary.CompileToPDFBytes([]byte(filledTemplate))
@@ -116,10 +116,17 @@ func (fp *FacturXPipeline) GenerateToFile(inv *invoice.Invoice, outputPath strin
 	return os.WriteFile(outputPath, pdfData, 0644)
 }
 
-// CompileFile compile un fichier Typst vers PDF
+// CompileFile compile un fichier Typst vers PDF (PDF/A-3b, pour Factur-X)
 func (fp *FacturXPipeline) CompileFile(inputPath, outputPath string) error {
 	// Compiler directement le fichier d'entrée sans créer de nouveau fichier temporaire
 	return fp.typstBinary.CompileFileDirect(inputPath, outputPath)
+}
+
+// CompileFilePlain compile un fichier Typst vers un PDF standard (sans contrainte
+// PDF/A-3b). Destiné aux templates custom, non archivistiques : sortie plus
+// légère et compilation plus rapide (pas d'intégration complète des polices).
+func (fp *FacturXPipeline) CompileFilePlain(inputPath, outputPath string) error {
+	return fp.typstBinary.CompileFileDirectPlain(inputPath, outputPath)
 }
 
 // loadTemplate charge le template Typst (custom ou par défaut)
@@ -152,7 +159,7 @@ func (fp *FacturXPipeline) patchFacturXPDF(pdfContent []byte, profile invoice.Pr
 	if ok {
 		obj, _ := ctx.Dereference(metaRef)
 		if stream, ok := obj.(types.StreamDict); ok {
-			stream.Decode()
+			_ = stream.Decode()
 			content := string(stream.Content)
 
 			// Inject XMP Factur-X if not present
@@ -220,7 +227,7 @@ func (fp *FacturXPipeline) patchFacturXPDF(pdfContent []byte, profile invoice.Pr
 				content = strings.Replace(content, "</rdf:RDF>", fxProps+"\n</rdf:RDF>", 1)
 				stream.Content = []byte(content)
 				stream.FilterPipeline = nil // Important: Do NOT compress XMP metadata for PDF/A
-				stream.Encode()             // Safely update Raw and stream Length fields
+				_ = stream.Encode()         // Safely update Raw and stream Length fields
 				ctx.Table[int(metaRef.ObjectNumber)].Object = stream
 			}
 		}
@@ -343,6 +350,8 @@ func (fp *FacturXPipeline) GeneratePDFOnly(inv *invoice.Invoice, options *Genera
 	if err != nil {
 		return nil, err
 	}
+
+	filledTemplate += "\n#pdf.attach(\"/license.txt\", bytes(\"Powered by fX\"), relationship: \"supplement\", description: \"License Info\", mime-type: \"text/plain\")\n"
 
 	return fp.typstBinary.CompileToPDFBytes([]byte(filledTemplate))
 }

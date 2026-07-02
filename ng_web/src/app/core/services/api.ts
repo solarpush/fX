@@ -47,6 +47,29 @@ interface ExtractionResult {
   xml: string;
 }
 
+// --- Custom templates (feature-flagged) ---
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  type?: string;
+  content?: string;
+  schema?: string;
+  updatedAt?: string;
+}
+
+interface CustomTemplateListData {
+  templates: CustomTemplate[];
+  total: number;
+}
+
+export interface CustomValidationResult {
+  valid: boolean;
+  schemaErrors: string[];
+  missingInTemplate: string[];
+  unknownInTemplate: string[];
+  mock: unknown;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -287,5 +310,80 @@ export class Api {
   // Health check
   health(): Observable<{ status: string }> {
     return this.http.get<{ status: string }>(`${this.baseUrl}/health`);
+  }
+
+  // ============================================================
+  // Custom templates (feature-flag ALLOW_CUSTOM_TEMPLATES)
+  // Scope isolé : template Typst libre + JSON Schema.
+  // ============================================================
+
+  listCustomTemplates(): Observable<CustomTemplate[]> {
+    return this.http
+      .get<ApiResponse<CustomTemplateListData>>(`${this.baseUrl}/custom/templates`)
+      .pipe(map((res) => res.data?.templates ?? []));
+  }
+
+  getCustomTemplate(id: string): Observable<CustomTemplate> {
+    return this.http
+      .get<ApiResponse<CustomTemplate>>(`${this.baseUrl}/custom/templates/${encodeURIComponent(id)}`)
+      .pipe(map((res) => res.data));
+  }
+
+  createCustomTemplate(payload: {
+    name: string;
+    content: string;
+    schema: string;
+  }): Observable<CustomTemplate> {
+    return this.http
+      .post<ApiResponse<CustomTemplate>>(`${this.baseUrl}/custom/templates`, payload)
+      .pipe(map((res) => res.data));
+  }
+
+  updateCustomTemplate(
+    id: string,
+    payload: { content: string; schema: string },
+  ): Observable<CustomTemplate> {
+    return this.http
+      .put<ApiResponse<CustomTemplate>>(
+        `${this.baseUrl}/custom/templates/${encodeURIComponent(id)}`,
+        payload,
+      )
+      .pipe(map((res) => res.data));
+  }
+
+  deleteCustomTemplate(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/custom/templates/${encodeURIComponent(id)}`);
+  }
+
+  customValidate(
+    template: string,
+    schema: string,
+    data?: unknown,
+  ): Observable<CustomValidationResult> {
+    return this.http
+      .post<ApiResponse<CustomValidationResult>>(`${this.baseUrl}/custom/validate`, {
+        template,
+        schema: schema ? JSON.parse(schema) : undefined,
+        data,
+      })
+      .pipe(map((res) => res.data));
+  }
+
+  customPreview(template: string, schema: string, data?: unknown): Observable<Blob> {
+    return this.http.post(
+      `${this.baseUrl}/custom/preview`,
+      { template, schema: schema ? JSON.parse(schema) : undefined, data },
+      { responseType: 'blob' },
+    );
+  }
+
+  customAiGenerate(payload: {
+    prompt: string;
+    current_typst: string;
+    schema: string;
+  }): Observable<string> {
+    return this.http
+      .post<ApiResponse<{ typst_code: string }>>(`${this.baseUrl}/custom/ai/generate`, payload)
+      .pipe(map((res) => res.data?.typst_code ?? ''));
   }
 }

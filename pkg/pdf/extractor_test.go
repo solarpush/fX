@@ -62,8 +62,6 @@ endobj
 	}
 }
 
-
-
 func BenchmarkExtractXML(b *testing.B) {
 	// Utiliser un vrai PDF si disponible
 	data, err := os.ReadFile("../../test-improved.pdf")
@@ -76,5 +74,3 @@ func BenchmarkExtractXML(b *testing.B) {
 		_, _ = ExtractXML(data)
 	}
 }
-
-

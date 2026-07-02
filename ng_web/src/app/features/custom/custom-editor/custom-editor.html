@@ -1,0 +1,147 @@
+<div class="custom-editor">
+  <header class="editor-header">
+    <div class="header-left">
+      <a routerLink="/custom" class="back-link">← Templates custom</a>
+      @if (id()) {
+        <h1>{{ name() || id() }}</h1>
+      } @else {
+        <input
+          type="text"
+          class="name-input"
+          [ngModel]="name()"
+          (ngModelChange)="name.set($event)"
+          placeholder="Nom du template (sans extension)"
+          aria-label="Nom du template"
+        />
+      }
+      @if (isCompiling()) {
+        <span class="status compiling">Compilation…</span>
+      }
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-primary" (click)="save()" [disabled]="isSaving()">
+        {{ isSaving() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </header>
+
+  @if (saveError()) {
+    <div class="save-banner" role="alert">{{ saveError() }}</div>
+  }
+
+  <div class="editor-content">
+    <!-- Colonne édition : Typst (haut) + JSON Schema (bas) -->
+    <div class="code-section">
+      <div class="pane pane-code">
+        <app-code-editor [code]="typstCode()" (codeChange)="onCodeChange($event)" />
+      </div>
+      <div class="pane pane-schema">
+        <div class="pane-toolbar">JSON Schema</div>
+        <textarea
+          class="schema-editor"
+          spellcheck="false"
+          [ngModel]="schemaText()"
+          (ngModelChange)="onSchemaChange($event)"
+          placeholder='{ "type": "object", "properties": { ... } }'
+          aria-label="JSON Schema"
+        ></textarea>
+      </div>
+
+      <!-- Assistant IA flottant, contenu dans la colonne d'édition -->
+      <div class="ai-floating-chat" [class.is-generating]="isGenerating()">
+        @if (isGenerating()) {
+          <div class="ai-generating-overlay">
+            <div class="ai-loader">
+              <div class="ai-loader-bar"></div>
+              <div class="ai-loader-bar"></div>
+              <div class="ai-loader-bar"></div>
+              <div class="ai-loader-bar"></div>
+            </div>
+            <span class="ai-generating-text">L'IA rédige le code Typst…</span>
+          </div>
+        }
+        <div class="ai-header">
+          <h2>Assistant IA</h2>
+        </div>
+        <div class="ai-body">
+          <textarea
+            class="ai-textarea"
+            [ngModel]="aiPrompt()"
+            (ngModelChange)="aiPrompt.set($event)"
+            placeholder="Décrivez le template à générer à partir du schéma (ex: mise en page facture avec en-tête bleu)…"
+            (keydown.control.enter)="generateWithAI()"
+            (keydown.meta.enter)="generateWithAI()"
+            [disabled]="isGenerating()"
+            aria-label="Instruction pour l'IA"
+          ></textarea>
+          <button
+            type="button"
+            class="ai-btn"
+            (click)="generateWithAI()"
+            [disabled]="isGenerating() || !aiPrompt().trim()"
+          >
+            {{ isGenerating() ? 'Génération…' : 'Demander' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne aperçu + validation -->
+    <div class="preview-section">
+      @if (hasIssues()) {
+        <div class="error-banner" [class.is-warning]="!compilationError()">
+          <div class="error-header">
+            <span>{{ compilationError() ? 'Erreur de compilation' : 'Incohérences détectées' }}</span>
+            <button
+              type="button"
+              class="fix-btn"
+              (click)="fixErrorWithAI()"
+              [disabled]="isGenerating()"
+            >
+              {{ isGenerating() ? 'Correction…' : 'Auto-Fix' }}
+            </button>
+          </div>
+          @if (compilationError()) {
+            <pre class="error-text">{{ compilationError() }}</pre>
+          } @else if (validation(); as v) {
+            <div class="error-text">
+              @if (v.schemaErrors.length > 0) {
+                <p class="issue-label">Schéma / données :</p>
+                <ul>
+                  @for (e of v.schemaErrors; track e) {
+                    <li>{{ e }}</li>
+                  }
+                </ul>
+              }
+              @if (v.unknownInTemplate.length > 0) {
+                <p class="issue-label">Champs du template absents du schéma :</p>
+                <ul>
+                  @for (f of v.unknownInTemplate; track f) {
+                    <li>{{ f }}</li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      @if (validation(); as v) {
+        <div class="validation-bar">
+          @if (v.valid) {
+            <span class="pill ok">Conforme au schéma</span>
+          } @else {
+            <span class="pill warn">À vérifier</span>
+          }
+          @if (v.missingInTemplate.length > 0) {
+            <span class="pill muted" title="Champs du schéma non utilisés dans le template">
+              {{ v.missingInTemplate.length }} champ(s) inutilisé(s)
+            </span>
+          }
+        </div>
+      }
+
+      <app-live-preview [previewBlob]="previewBlob()" [isLoading]="isCompiling()" />
+    </div>
+  </div>
+</div>
