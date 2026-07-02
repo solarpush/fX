@@ -280,6 +280,21 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandlePublicConfig expose la configuration publique nécessaire au frontend
+// (feature flags). Aucune donnée sensible n'est renvoyée.
+func (h *Handler) HandlePublicConfig(w http.ResponseWriter, r *http.Request) {
+	allowCustom := false
+	webUIEnabled := true
+	if h.cfg != nil {
+		allowCustom = h.cfg.Features.AllowCustomTemplates
+		webUIEnabled = h.cfg.WebUI.Enabled
+	}
+	WriteSuccess(w, map[string]interface{}{
+		"allowCustomTemplates": allowCustom,
+		"webUiEnabled":         webUIEnabled,
+	})
+}
+
 // buildStoragePath construit le chemin de stockage
 func (h *Handler) buildStoragePath(opts *StorageOptions, inv *invoice.Invoice) string {
 	filename := opts.Filename

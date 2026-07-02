@@ -1,0 +1,57 @@
+<div class="custom-list">
+  <header class="list-header">
+    <div>
+      <h1>Templates custom</h1>
+      <p class="subtitle">Templates Typst libres pilotés par un JSON Schema (hors Factur-X).</p>
+    </div>
+    <a routerLink="/custom/new" class="btn-primary">Nouveau template custom</a>
+  </header>
+
+  @if (error()) {
+    <div class="error-message" role="alert">{{ error() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Chargement...</p>
+    </div>
+  } @else if (templates().length === 0) {
+    <div class="empty-state">
+      <p>Aucun template custom pour le moment.</p>
+      <a routerLink="/custom/new" class="btn-primary">Créer votre premier template</a>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="templates-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Dernière modification</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (template of templates(); track template.id) {
+            <tr>
+              <td class="name-col">{{ template.name }}</td>
+              <td class="date-col">{{ formatDate(template.updatedAt) }}</td>
+              <td class="actions-col">
+                <div class="table-actions">
+                  <a [routerLink]="['/custom', template.id]" class="btn-action btn-edit">Éditer</a>
+                  <button
+                    type="button"
+                    (click)="deleteTemplate(template.id, $event)"
+                    class="btn-action btn-delete"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

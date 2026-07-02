@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TemplateGazette",
+  "description": "Schema pour générer une gazette ou newsletter interne",
+  "type": "object",
+  "properties": {
+    "header": {
+      "type": "object",
+      "description": "En-tête principal de la gazette",
+      "properties": {
+        "titre_gazette": {
+          "type": "string",
+          "default": "La Gazette"
+        },
+        "nom_entreprise": {
+          "type": "string"
+        },
+        "date_publication": {
+          "type": "string",
+          "description": "Ex: MAI 2026"
+        },
+        "message_intro": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "titre_gazette",
+        "date_publication"
+      ]
+    },
+    "articles": {
+      "type": "array",
+      "description": "Liste des articles ou événements de la gazette",
+      "items": {
+        "type": "object",
+        "properties": {
+          "titre_article": {
+            "type": "string"
+          },
+          "date_evenement": {
+            "type": "string",
+            "description": "Date spécifique à l'article, optionnelle"
+          },
+          "texte_descriptif": {
+            "type": "string"
+          },
+          "style_image": {
+            "type": "string",
+            "enum": [
+              "polaroid",
+              "standard"
+            ],
+            "default": "polaroid",
+            "description": "Le style visuel à appliquer au bloc d'images"
+          },
+          "images": {
+            "type": "array",
+            "description": "Galerie d'images illustrant l'article",
+            "items": {
+              "type": "object",
+              "properties": {
+                "src": {
+                  "type": "string",
+                  "description": "Image en base64 passée à la volée dans les données. Rendue en mémoire via le helper {{bytes src}} (Typst bytes((...))). Data URI toléré."
+                },
+                "alt_text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "src"
+              ]
+            }
+          }
+        },
+        "required": [
+          "titre_article",
+          "texte_descriptif"
+        ]
+      }
+    }
+  },
+  "required": [
+    "header",
+    "articles"
+  ]
+}

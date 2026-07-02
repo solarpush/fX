@@ -116,10 +116,17 @@ func (fp *FacturXPipeline) GenerateToFile(inv *invoice.Invoice, outputPath strin
 	return os.WriteFile(outputPath, pdfData, 0644)
 }
 
-// CompileFile compile un fichier Typst vers PDF
+// CompileFile compile un fichier Typst vers PDF (PDF/A-3b, pour Factur-X)
 func (fp *FacturXPipeline) CompileFile(inputPath, outputPath string) error {
 	// Compiler directement le fichier d'entrée sans créer de nouveau fichier temporaire
 	return fp.typstBinary.CompileFileDirect(inputPath, outputPath)
+}
+
+// CompileFilePlain compile un fichier Typst vers un PDF standard (sans contrainte
+// PDF/A-3b). Destiné aux templates custom, non archivistiques : sortie plus
+// légère et compilation plus rapide (pas d'intégration complète des polices).
+func (fp *FacturXPipeline) CompileFilePlain(inputPath, outputPath string) error {
+	return fp.typstBinary.CompileFileDirectPlain(inputPath, outputPath)
 }
 
 // loadTemplate charge le template Typst (custom ou par défaut)

@@ -210,3 +210,60 @@ func (c *Client) generateOpenAI(systemPrompt, userPrompt string) (string, error)
 
 	return aiResp.Choices[0].Message.Content, nil
 }
+
+// CustomGenerateRequest est la requête de génération pour le mode template custom
+// (découplé de Factur-X). Le JSON Schema fourni est injecté dans le prompt.
+type CustomGenerateRequest struct {
+	Prompt       string `json:"prompt"`
+	CurrentTypst string `json:"current_typst"`
+	Schema       string `json:"schema"`
+}
+
+// GenerateCustomTypst génère un template Typst générique piloté par un JSON
+// Schema arbitraire. Contrairement à GenerateTypst, il n'impose aucune règle
+// métier Factur-X : seules les données décrites par le schema sont disponibles.
+func (c *Client) GenerateCustomTypst(req CustomGenerateRequest) (string, error) {
+	systemPrompt := `Tu es un expert développeur Typst. Tu génères ou modifies un template Typst
+rendu par un moteur de template maison basé sur la syntaxe Handlebars.
+
+RÈGLES CRITIQUES :
+1. Réponds UNIQUEMENT avec le code Typst, sans bloc markdown, sans explication, ni avant ni après.
+2. N'invente pas de fonctions Typst inexistantes. Pour colorer un tableau, utilise 'fill' : #table(fill: luma(240), ...).
+3. À l'intérieur des parenthèses d'une fonction, tu es DÉJÀ en mode code : n'utilise PAS '#' devant les fonctions internes.
+   - ❌ FAUX : #align(center, #rect()[Texte])
+   - ✅ CORRECT : #align(center, rect()[Texte])
+4. Pour les tableaux, utilise UNIQUEMENT #table(), jamais de tableaux Markdown.
+5. Pour itérer, N'UTILISE PAS #for : utilise la syntaxe Handlebars {{#each items}} ... {{/each}}.
+   Les boucles et conditions peuvent être IMBRIQUÉES sur plusieurs niveaux.
+   Dans une boucle, accède aux propriétés de l'élément courant directement ({{propriete}}),
+   à une variable d'un niveau parent avec {{../champ}}, et aux variables racines par leur chemin ({{racine.champ}}).
+6. Handlebars est pré-compilé AVANT Typst. Place {{#if}}...{{/if}}, {{else}} et {{#each}}...{{/each}} sur des lignes complètes.
+7. Injecte les données via {{chemin.vers.valeur}} en respectant STRICTEMENT le JSON Schema fourni.
+   N'utilise QUE des champs déclarés dans le schema.
+8. IMAGES : Typst n'accepte PAS de base64 dans #image(). Pour afficher une image fournie en base64 dans les
+   données, utilise le helper spécial {{bytes chemin}} qui décode le base64 en octets Typst.
+   - Écris SANS guillemets : #image({{bytes logo}}, width: 4cm)
+   - {{bytes chemin}} renvoie 'none' si la donnée est absente/invalide : protège l'affichage avec une condition Typst :
+     #let img = {{bytes logo}}
+     #if img != none { image(img, width: 4cm) } else { rect(width: 4cm, height: 3cm, fill: luma(230)) }
+9. POLICES : utilise UNIQUEMENT des familles réellement installées dans l'environnement (Linux/Alpine) :
+   "Liberation Sans", "Liberation Serif", "Liberation Mono",
+   "DejaVu Sans", "DejaVu Serif", "DejaVu Sans Mono",
+   "Open Sans", "Noto Sans", "Noto Serif".
+   N'invente JAMAIS d'autres polices et n'utilise PAS les familles génériques "serif"/"sans-serif"/"monospace"
+   ni des polices propriétaires (Arial, Times New Roman, Helvetica, Calibri...). Elles ne sont pas disponibles.`
+
+	userPrompt := fmt.Sprintf(`Voici le JSON Schema décrivant les données disponibles pour le template :
+%s
+
+Code Typst actuel (si existant) :
+%s
+
+Demande de l'utilisateur :
+%s`, req.Schema, req.CurrentTypst, req.Prompt)
+
+	if c.config.Provider == "ollama" {
+		return c.generateOllama(systemPrompt, userPrompt)
+	}
+	return c.generateOpenAI(systemPrompt, userPrompt)
+}
