@@ -78,7 +78,7 @@ func main() {
 			log.Fatalf("JSON err: %v", err)
 		}
 		inv.Invoice.Number = fmt.Sprintf("INV-%d", i)
-		
+
 		_, err = cii.Generate(inv)
 		if err != nil {
 			log.Fatalf("XML err: %v", err)
@@ -100,7 +100,7 @@ func main() {
 			log.Fatalf("JSON err: %v", err)
 		}
 		inv.Invoice.Number = fmt.Sprintf("INV-%d", i)
-		
+
 		_, err = pipeline.Generate(inv, nil)
 		if err != nil {
 			log.Fatalf("Pipeline err at %d: %v", i, err)

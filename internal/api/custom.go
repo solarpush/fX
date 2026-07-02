@@ -209,7 +209,7 @@ func (h *Handler) HandleCustomPreview(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "inline; filename=custom-preview.pdf")
-	w.Write(pdfBytes)
+	_, _ = w.Write(pdfBytes)
 }
 
 // HandleCustomValidate valide la cohérence template <-> schema et renvoie un mock.
@@ -396,7 +396,7 @@ func (h *Handler) HandleListCustomTemplates(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	os.MkdirAll(customTemplatesDir, 0755)
+	_ = os.MkdirAll(customTemplatesDir, 0755)
 	files, err := os.ReadDir(customTemplatesDir)
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("failed to read templates: %v", err))
@@ -483,7 +483,7 @@ func (h *Handler) HandleCreateCustomTemplate(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	os.MkdirAll(customTemplatesDir, 0755)
+	_ = os.MkdirAll(customTemplatesDir, 0755)
 	if err := os.WriteFile(customTypPath(id), []byte(req.Content), 0644); err != nil {
 		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("failed to save template: %v", err))
 		return

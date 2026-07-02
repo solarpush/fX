@@ -72,7 +72,7 @@ func (fp *FacturXPipeline) Generate(inv *invoice.Invoice, options *GenerateOptio
 	}
 
 	// 5. Créer un dossier temporaire pour l'XML
-	os.MkdirAll("./tmp", 0755)
+	_ = os.MkdirAll("./tmp", 0755)
 	tmpDir, err := os.MkdirTemp("./tmp", "facturx-*")
 	if err != nil {
 		return nil, fmt.Errorf("erreur création tmpdir: %w", err)
@@ -159,7 +159,7 @@ func (fp *FacturXPipeline) patchFacturXPDF(pdfContent []byte, profile invoice.Pr
 	if ok {
 		obj, _ := ctx.Dereference(metaRef)
 		if stream, ok := obj.(types.StreamDict); ok {
-			stream.Decode()
+			_ = stream.Decode()
 			content := string(stream.Content)
 
 			// Inject XMP Factur-X if not present
@@ -227,7 +227,7 @@ func (fp *FacturXPipeline) patchFacturXPDF(pdfContent []byte, profile invoice.Pr
 				content = strings.Replace(content, "</rdf:RDF>", fxProps+"\n</rdf:RDF>", 1)
 				stream.Content = []byte(content)
 				stream.FilterPipeline = nil // Important: Do NOT compress XMP metadata for PDF/A
-				stream.Encode()             // Safely update Raw and stream Length fields
+				_ = stream.Encode()         // Safely update Raw and stream Length fields
 				ctx.Table[int(metaRef.ObjectNumber)].Object = stream
 			}
 		}

@@ -1,8 +1,8 @@
 package cii
 
 import (
-"testing"
-"time"
+	"testing"
+	"time"
 )
 
 func TestParse_MinimalInvoice(t *testing.T) {
@@ -113,63 +113,63 @@ func TestParse_MinimalInvoice(t *testing.T) {
 	}
 
 	// Vérifier l'acheteur
-if inv.Buyer.Name != "Test Buyer" {
-t.Errorf("Expected buyer name Test Buyer, got %s", inv.Buyer.Name)
-}
+	if inv.Buyer.Name != "Test Buyer" {
+		t.Errorf("Expected buyer name Test Buyer, got %s", inv.Buyer.Name)
+	}
 
-// Vérifier les totaux
-if inv.Totals.SubtotalExclVat != 100.00 {
-t.Errorf("Expected subtotal 100.00, got %.2f", inv.Totals.SubtotalExclVat)
-}
-if inv.Totals.TotalVat != 20.00 {
-t.Errorf("Expected VAT 20.00, got %.2f", inv.Totals.TotalVat)
-}
-if inv.Totals.TotalInclVat != 120.00 {
-t.Errorf("Expected total 120.00, got %.2f", inv.Totals.TotalInclVat)
-}
+	// Vérifier les totaux
+	if inv.Totals.SubtotalExclVat != 100.00 {
+		t.Errorf("Expected subtotal 100.00, got %.2f", inv.Totals.SubtotalExclVat)
+	}
+	if inv.Totals.TotalVat != 20.00 {
+		t.Errorf("Expected VAT 20.00, got %.2f", inv.Totals.TotalVat)
+	}
+	if inv.Totals.TotalInclVat != 120.00 {
+		t.Errorf("Expected total 120.00, got %.2f", inv.Totals.TotalInclVat)
+	}
 
-// Vérifier les lignes
-if len(inv.Lines) != 1 {
-t.Fatalf("Expected 1 line, got %d", len(inv.Lines))
-}
-line := inv.Lines[0]
-if line.ID != "1" {
-t.Errorf("Expected line ID 1, got %s", line.ID)
-}
-if line.Description != "Test Product" {
-t.Errorf("Expected description Test Product, got %s", line.Description)
-}
-if line.Quantity != 1.00 {
-t.Errorf("Expected quantity 1.00, got %.2f", line.Quantity)
-}
-if line.Unit != "C62" {
-t.Errorf("Expected unit C62, got %s", line.Unit)
-}
-if line.UnitPrice != 100.00 {
-t.Errorf("Expected unit price 100.00, got %.2f", line.UnitPrice)
-}
+	// Vérifier les lignes
+	if len(inv.Lines) != 1 {
+		t.Fatalf("Expected 1 line, got %d", len(inv.Lines))
+	}
+	line := inv.Lines[0]
+	if line.ID != "1" {
+		t.Errorf("Expected line ID 1, got %s", line.ID)
+	}
+	if line.Description != "Test Product" {
+		t.Errorf("Expected description Test Product, got %s", line.Description)
+	}
+	if line.Quantity != 1.00 {
+		t.Errorf("Expected quantity 1.00, got %.2f", line.Quantity)
+	}
+	if line.Unit != "C62" {
+		t.Errorf("Expected unit C62, got %s", line.Unit)
+	}
+	if line.UnitPrice != 100.00 {
+		t.Errorf("Expected unit price 100.00, got %.2f", line.UnitPrice)
+	}
 }
 
 func TestParse_InvalidXML(t *testing.T) {
-xmlData := []byte(`<?xml version="1.0"?><invalid>`)
+	xmlData := []byte(`<?xml version="1.0"?><invalid>`)
 
-_, err := Parse(xmlData)
-if err == nil {
-t.Error("Expected error for invalid XML")
-}
+	_, err := Parse(xmlData)
+	if err == nil {
+		t.Error("Expected error for invalid XML")
+	}
 }
 
 func TestParse_EmptyXML(t *testing.T) {
-xmlData := []byte("")
+	xmlData := []byte("")
 
-_, err := Parse(xmlData)
-if err == nil {
-t.Error("Expected error for empty XML")
-}
+	_, err := Parse(xmlData)
+	if err == nil {
+		t.Error("Expected error for empty XML")
+	}
 }
 
 func BenchmarkParse(b *testing.B) {
-xmlData := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+	xmlData := []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" 
                           xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" 
                           xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" 
@@ -206,8 +206,8 @@ xmlData := []byte(`<?xml version="1.0" encoding="UTF-8"?>
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>`)
 
-b.ResetTimer()
-for i := 0; i < b.N; i++ {
-_, _ = Parse(xmlData)
-}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = Parse(xmlData)
+	}
 }

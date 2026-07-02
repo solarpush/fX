@@ -28,7 +28,7 @@ func ExtractXML(pdfData []byte) ([]byte, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to read attachment %s: %w", att.FileName, err)
 			}
-			
+
 			// Validate that it looks like XML
 			if bytes.Contains(xmlData, []byte("<?xml")) && bytes.Contains(xmlData, []byte("CrossIndustryInvoice")) {
 				return xmlData, nil

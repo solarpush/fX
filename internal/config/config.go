@@ -113,7 +113,7 @@ func Load() (*Config, error) {
 		},
 		WebUI: WebUIConfig{
 			Enabled: getEnvAsBool("WEB_UI_ENABLED", true), // Activé par défaut
-			Path:    getEnv("WEB_UI_PATH", "./web/ng"),   // Chemin des statiques d'Angular
+			Path:    getEnv("WEB_UI_PATH", "./web/ng"),    // Chemin des statiques d'Angular
 		},
 		AI: AIConfig{
 			Provider: getEnv("AI_PROVIDER", "ollama"),

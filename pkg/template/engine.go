@@ -115,15 +115,15 @@ func formatValue(key string, value interface{}) string {
 	if floatVal, ok := value.(float64); ok {
 		lowerKey := strings.ToLower(key)
 		// Si c'est un montant, on force 2 décimales
-		if strings.Contains(lowerKey, "price") || 
-		   strings.Contains(lowerKey, "amount") || 
-		   strings.Contains(lowerKey, "total") || 
-		   strings.Contains(lowerKey, "rate") ||
-		   strings.Contains(lowerKey, "tva") ||
-		   strings.Contains(lowerKey, "vat") {
+		if strings.Contains(lowerKey, "price") ||
+			strings.Contains(lowerKey, "amount") ||
+			strings.Contains(lowerKey, "total") ||
+			strings.Contains(lowerKey, "rate") ||
+			strings.Contains(lowerKey, "tva") ||
+			strings.Contains(lowerKey, "vat") {
 			return fmt.Sprintf("%.2f", floatVal)
 		}
-		
+
 		// Pour les autres nombres (comme quantity), on affiche sans décimale si c'est entier
 		if floatVal == float64(int64(floatVal)) {
 			return fmt.Sprintf("%d", int64(floatVal))
@@ -147,7 +147,7 @@ func (e *Engine) replaceVariables(content string) string {
 
 		path := strings.TrimSpace(matches[1])
 		value := e.getNestedValue(path)
-		
+
 		// Extraire le nom de la variable (dernier élément du chemin) pour formater correctement
 		parts := strings.Split(path, ".")
 		keyName := parts[len(parts)-1]
@@ -187,7 +187,7 @@ func (e *Engine) processIfs(content string) (string, error) {
 		ifContent := matches[2]
 
 		value := e.getNestedValue(varPath)
-		
+
 		isTruthy := false
 		if value != nil {
 			switch v := value.(type) {

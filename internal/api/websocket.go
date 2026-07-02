@@ -140,7 +140,7 @@ func (h *Handler) handleWSPreview(conn *websocket.Conn, mu *sync.Mutex, req *WSP
 // compileTypstToBytes compile le code Typst et retourne les bytes du PDF
 func (h *Handler) compileTypstToBytes(typstCode string) ([]byte, error) {
 	tmpBase := "./tmp/typst-preview"
-	os.MkdirAll(tmpBase, 0755)
+	_ = os.MkdirAll(tmpBase, 0755)
 
 	tmpDir, err := os.MkdirTemp(tmpBase, "ws-preview-*")
 	if err != nil {

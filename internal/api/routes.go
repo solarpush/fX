@@ -120,8 +120,8 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 		}
 	}
 	// S'assurer que le dossier existe
-	os.MkdirAll(imagesPath, 0755)
-	
+	_ = os.MkdirAll(imagesPath, 0755)
+
 	imagesFs := http.FileServer(http.Dir(imagesPath))
 	r.PathPrefix("/images/").Handler(http.StripPrefix("/images/", imagesFs))
 
@@ -132,7 +132,7 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 		if wd, err := os.Getwd(); err == nil && filepath.Base(wd) == "bin" {
 			webPath = filepath.Join(filepath.Dir(wd), "web", "ng")
 		}
-		
+
 		spa := spaHandler{staticPath: webPath, indexPath: "index.html"}
 		r.PathPrefix("/").Handler(spa)
 	}

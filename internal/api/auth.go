@@ -85,7 +85,7 @@ func (h *Handler) HandleMe(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	_, err := validateToken(r, h.cfg.Auth.JWTSecret)
 	if err != nil {
 		http.Error(w, "Non authentifié", http.StatusUnauthorized)

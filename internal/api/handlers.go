@@ -136,7 +136,7 @@ func (h *Handler) HandleGeneratePDF(w http.ResponseWriter, r *http.Request) {
 	if req.Options != nil && req.Options.TemplateID != "" {
 		options.TemplatePath = filepath.Join("./templates-custom", req.Options.TemplateID)
 	}
-	
+
 	pdfData, err := h.pipeline.GeneratePDFOnly(inv, options)
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("pdf generation failed: %v", err))
@@ -180,7 +180,7 @@ func (h *Handler) HandleGenerateXML(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/xml")
-	w.Write(xmlData)
+	_, _ = w.Write(xmlData)
 }
 
 // HandleValidate valide une facture

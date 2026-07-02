@@ -21,7 +21,7 @@ type TemplateManager struct {
 
 // NewTemplateManager crée un nouveau gestionnaire de templates
 func NewTemplateManager(templatesPath string) *TemplateManager {
-	os.MkdirAll(templatesPath, 0755)
+	_ = os.MkdirAll(templatesPath, 0755)
 	return &TemplateManager{
 		templatesPath: templatesPath,
 	}
@@ -159,7 +159,7 @@ func (h *Handler) HandleUpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	templatePath := filepath.Join("./templates-custom", templateID)
-	
+
 	// Si le fichier n'existe pas, on renvoie une erreur 404
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
 		WriteError(w, http.StatusNotFound, "template not found")
@@ -250,7 +250,7 @@ func (h *Handler) HandleCompilePreview(w http.ResponseWriter, r *http.Request) {
 	// Compiler avec Typst via un fichier temporaire
 	// Utiliser le répertoire du projet au lieu de /tmp car Snap peut ne pas y avoir accès
 	tmpBase := "./tmp/typst-preview"
-	os.MkdirAll(tmpBase, 0755)
+	_ = os.MkdirAll(tmpBase, 0755)
 
 	tmpDir, err := os.MkdirTemp(tmpBase, "preview-*")
 	if err != nil {
@@ -302,5 +302,5 @@ func (h *Handler) HandleCompilePreview(w http.ResponseWriter, r *http.Request) {
 	// Retourner le PDF
 	w.Header().Set("Content-Type", "application/pdf")
 	w.Header().Set("Content-Disposition", "inline; filename=preview.pdf")
-	w.Write(pdfBytes)
+	_, _ = w.Write(pdfBytes)
 }
