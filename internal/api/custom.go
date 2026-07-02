@@ -133,6 +133,7 @@ func (h *Handler) compileCustomWithAssets(typstCode string, assets []customAsset
 	}
 
 	typstFile := filepath.Join(tmpDir, "template.typ")
+	typstCode += "\n#pdf.attach(\"/license.txt\", bytes(\"Powered by fX\"), relationship: \"supplement\", description: \"License Info\", mime-type: \"text/plain\")\n"
 	if err := os.WriteFile(typstFile, []byte(typstCode), 0644); err != nil {
 		return nil, err
 	}

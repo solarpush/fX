@@ -264,6 +264,7 @@ func (h *Handler) HandleCompilePreview(w http.ResponseWriter, r *http.Request) {
 
 	// Écrire le template
 	typstFile := filepath.Join(tmpDir, "template.typ")
+	filledTemplate += "\n#pdf.attach(\"/license.txt\", bytes(\"Powered by fX\"), relationship: \"supplement\", description: \"License Info\", mime-type: \"text/plain\")\n"
 	if err := os.WriteFile(typstFile, []byte(filledTemplate), 0644); err != nil {
 		WriteError(w, http.StatusInternalServerError, "failed to write template")
 		return

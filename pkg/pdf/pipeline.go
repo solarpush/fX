@@ -89,7 +89,7 @@ func (fp *FacturXPipeline) Generate(inv *invoice.Invoice, options *GenerateOptio
 	// On utilise filepath.ToSlash et on préfixe par "/" pour que Typst cherche depuis la racine du projet (--root)
 	relXmlPath := "/" + filepath.ToSlash(xmlPath)
 	attachCmd := fmt.Sprintf("\n#pdf.attach(\"%s\", relationship: \"data\", mime-type: \"text/xml\", description: \"Factur-X Invoice\")\n", relXmlPath)
-	filledTemplate += attachCmd
+	filledTemplate += "\n#pdf.attach(\"/license.txt\", bytes(\"Powered by fX\"), relationship: \"supplement\", description: \"License Info\", mime-type: \"text/plain\")\n" + attachCmd
 
 	// 7. Compiler le template en PDF avec Typst (incluant l'attachement XML)
 	pdfContent, err := fp.typstBinary.CompileToPDFBytes([]byte(filledTemplate))
@@ -350,6 +350,8 @@ func (fp *FacturXPipeline) GeneratePDFOnly(inv *invoice.Invoice, options *Genera
 	if err != nil {
 		return nil, err
 	}
+
+	filledTemplate += "\n#pdf.attach(\"/license.txt\", bytes(\"Powered by fX\"), relationship: \"supplement\", description: \"License Info\", mime-type: \"text/plain\")\n"
 
 	return fp.typstBinary.CompileToPDFBytes([]byte(filledTemplate))
 }
