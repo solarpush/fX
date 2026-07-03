@@ -86,7 +86,7 @@ export class GenerateInvoice implements OnInit {
       seller: this.fb.group({
         name: ['', Validators.required],
         vat_id: [''],
-        siret: [''],
+        siret: ['', [Validators.required, Validators.pattern(/^\d{14}$/)]],
         address: this.fb.group({
           street: ['', Validators.required],
           city: ['', Validators.required],
@@ -105,7 +105,7 @@ export class GenerateInvoice implements OnInit {
       buyer: this.fb.group({
         name: ['', Validators.required],
         vat_id: [''],
-        siret: [''],
+        siret: ['', [Validators.required, Validators.pattern(/^\d{14}$/)]],
         address: this.fb.group({
           street: ['', Validators.required],
           city: ['', Validators.required],

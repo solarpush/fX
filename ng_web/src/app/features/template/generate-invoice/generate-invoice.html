@@ -141,8 +141,22 @@
                 <input type="text" formControlName="vat_id" placeholder="FR..." />
               </div>
               <div class="form-group">
-                <label>N° SIRET</label>
-                <input type="text" formControlName="siret" placeholder="123 456 789 00012" />
+                <label>N° SIRET *</label>
+                <input
+                  type="text"
+                  formControlName="siret"
+                  placeholder="123 456 789 00012"
+                  [class.invalid]="
+                    invoiceForm.get('seller.siret')?.invalid &&
+                    invoiceForm.get('seller.siret')?.touched
+                  "
+                />
+                @if (
+                  invoiceForm.get('seller.siret')?.invalid &&
+                  invoiceForm.get('seller.siret')?.touched
+                ) {
+                  <span class="error-msg">SIRET requis (14 chiffres)</span>
+                }
               </div>
             </div>
 
@@ -257,8 +271,22 @@
                 <input type="text" formControlName="vat_id" placeholder="FR..." />
               </div>
               <div class="form-group">
-                <label>N° SIRET</label>
-                <input type="text" formControlName="siret" placeholder="123 456 789 00012" />
+                <label>N° SIRET *</label>
+                <input
+                  type="text"
+                  formControlName="siret"
+                  placeholder="123 456 789 00012"
+                  [class.invalid]="
+                    invoiceForm.get('buyer.siret')?.invalid &&
+                    invoiceForm.get('buyer.siret')?.touched
+                  "
+                />
+                @if (
+                  invoiceForm.get('buyer.siret')?.invalid &&
+                  invoiceForm.get('buyer.siret')?.touched
+                ) {
+                  <span class="error-msg">SIRET requis (14 chiffres)</span>
+                }
               </div>
             </div>
 

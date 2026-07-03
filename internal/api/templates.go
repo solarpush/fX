@@ -219,9 +219,9 @@ func (h *Handler) HandleCompilePreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Valider les règles métier Factur-X
-	if err := invoice.Validate(inv); err != nil {
-		WriteError(w, http.StatusBadRequest, fmt.Sprintf("Factur-X validation failed: %v", err))
+	// Valider les règles métier Factur-X (validation complète, erreurs détaillées)
+	if report := invoice.ValidateReport(inv); report.HasErrors() {
+		WriteValidationErrors(w, report, "Factur-X validation failed")
 		return
 	}
 
