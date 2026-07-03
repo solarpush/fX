@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/solarpush/fX/compare/v1.2.0...v1.3.0) (2026-07-03)
+
+
+### Features
+
+* **api:** ✨ Enhance Factur-X validation with detailed reporting ([6441233](https://github.com/solarpush/fX/commit/6441233fb71274b0c79280816fe12de5ca7eecc0))
+* **api:** ✨ Enhance Factur-X validation with detailed reporting ([7b73daa](https://github.com/solarpush/fX/commit/7b73daa4c9134e4e52e8d692c4b418c51b1a2015))
+
 ## [1.2.0](https://github.com/solarpush/fX/compare/v1.1.3...v1.2.0) (2026-07-02)
 
 
