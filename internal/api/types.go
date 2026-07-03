@@ -3,7 +3,10 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/solarpush/fx/pkg/invoice"
 )
 
 // Response structure de réponse standard
@@ -64,8 +67,11 @@ type ValidateRequest struct {
 
 // ValidateResponse réponse de validation
 type ValidateResponse struct {
-	Valid  bool     `json:"valid"`
-	Errors []string `json:"errors,omitempty"`
+	Valid    bool            `json:"valid"`
+	Profile  string          `json:"profile,omitempty"`
+	Errors   []string        `json:"errors,omitempty"`   // messages lisibles (rétro-compat)
+	Warnings []string        `json:"warnings,omitempty"` // avertissements non bloquants
+	Details  []invoice.Issue `json:"details,omitempty"`  // constats structurés (field/code/enum)
 }
 
 // ExtractRequest requête d'extraction
@@ -125,6 +131,36 @@ func WriteError(w http.ResponseWriter, status int, message string) {
 	WriteJSON(w, status, Response{
 		Success: false,
 		Error:   message,
+		Meta: &Meta{
+			Timestamp: time.Now(),
+		},
+	})
+}
+
+// buildValidateResponse construit la réponse de validation détaillée à partir d'un rapport.
+func buildValidateResponse(report *invoice.Report) ValidateResponse {
+	return ValidateResponse{
+		Valid:    report.Valid,
+		Profile:  report.Profile,
+		Errors:   report.ErrorMessages(),
+		Warnings: report.WarningMessages(),
+		Details:  report.Issues,
+	}
+}
+
+// WriteValidationErrors écrit une réponse 400 détaillée lorsqu'une facture est invalide.
+// Le champ `error` contient un résumé lisible (rétro-compat frontend) et `data` porte le
+// détail structuré (field, code, valeurs autorisées) ainsi que les avertissements.
+func WriteValidationErrors(w http.ResponseWriter, report *invoice.Report, prefix string) {
+	msgs := report.ErrorMessages()
+	summary := prefix
+	if len(msgs) > 0 {
+		summary += ": " + strings.Join(msgs, "; ")
+	}
+	WriteJSON(w, http.StatusBadRequest, Response{
+		Success: false,
+		Error:   summary,
+		Data:    buildValidateResponse(report),
 		Meta: &Meta{
 			Timestamp: time.Now(),
 		},

@@ -55,9 +55,9 @@ func (h *Handler) HandleGenerateFacturX(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Valider
-	if err := invoice.Validate(inv); err != nil {
-		WriteError(w, http.StatusBadRequest, fmt.Sprintf("validation failed: %v", err))
+	// Valider (validation Factur-X complète, erreurs détaillées avec enums)
+	if report := invoice.ValidateReport(inv); report.HasErrors() {
+		WriteValidationErrors(w, report, "validation failed")
 		return
 	}
 
@@ -126,8 +126,8 @@ func (h *Handler) HandleGeneratePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := invoice.Validate(inv); err != nil {
-		WriteError(w, http.StatusBadRequest, fmt.Sprintf("validation failed: %v", err))
+	if report := invoice.ValidateReport(inv); report.HasErrors() {
+		WriteValidationErrors(w, report, "validation failed")
 		return
 	}
 
@@ -168,8 +168,8 @@ func (h *Handler) HandleGenerateXML(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := invoice.Validate(inv); err != nil {
-		WriteError(w, http.StatusBadRequest, fmt.Sprintf("validation failed: %v", err))
+	if report := invoice.ValidateReport(inv); report.HasErrors() {
+		WriteValidationErrors(w, report, "validation failed")
 		return
 	}
 
@@ -197,18 +197,10 @@ func (h *Handler) HandleValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Valider
-	validationErr := invoice.Validate(inv)
+	// Valider (rapport complet: erreurs + avertissements + valeurs autorisées)
+	report := invoice.ValidateReport(inv)
 
-	resp := &ValidateResponse{
-		Valid: validationErr == nil,
-	}
-
-	if validationErr != nil {
-		resp.Errors = []string{validationErr.Error()}
-	}
-
-	WriteSuccess(w, resp)
+	WriteSuccess(w, buildValidateResponse(report))
 }
 
 // HandleExtract extrait les données d'un PDF Factur-X

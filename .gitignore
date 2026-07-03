@@ -39,3 +39,4 @@ tmp/
 
 # Env variables
 .env
+tpl_*
