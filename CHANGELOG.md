@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/solarpush/fX/compare/v1.1.3...v1.2.0) (2026-07-02)
+
+
+### Features
+
+* **pdf:** ✨ Add license attachment to PDF generation ([dc7e625](https://github.com/solarpush/fX/commit/dc7e625cba4b4748ffd5b37364742893e6692106))
+* **template:** ✨ Add gazette template generation with schema and rendering engine ([141e354](https://github.com/solarpush/fX/commit/141e354ffa43c7fd841e1910923c303a3ed0dc53))
+
 ## [1.1.3](https://github.com/solarpush/fX/compare/v1.1.2...v1.1.3) (2026-06-28)
 
 
