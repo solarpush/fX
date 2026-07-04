@@ -1,5 +1,5 @@
 // @profile: EXTENDED
-// @capabilities: vat_breakdown,bank_info
+
 
 #set page(
   paper: "a4",

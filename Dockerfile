@@ -57,6 +57,9 @@ COPY --from=builder /bin/fx-server /usr/local/bin/fx-server
 # Copier les templates embarqués (si nécessaire)
 COPY --from=builder /app/pkg/pdf/templates /templates
 
+# Copier le dossier docs (pour le schéma JSON)
+COPY --from=builder /app/docs/invoice.schema.json /docs
+
 # Copier le frontend Angular compilé
 COPY --from=ng-builder /app/dist/ng_web/browser /web/ng
 

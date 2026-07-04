@@ -8,7 +8,11 @@ import { Api } from './api';
 export class TypstCompiler {
   private readonly api = inject(Api);
 
-  compile(typstCode: string, profile: string = 'EN16931'): Observable<Blob> {
-    return this.api.compilePreview(typstCode, profile);
+  compile(typstCode: string, profile: string = 'EN16931', mockData?: any): Observable<Blob> {
+    return this.api.compilePreview(typstCode, profile, mockData);
+  }
+
+  getRules(profile: string) {
+    return this.api.getTemplateRules(profile);
   }
 }

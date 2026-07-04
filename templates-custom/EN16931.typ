@@ -1,5 +1,5 @@
 // @profile: EN16931
-// @capabilities: vat_breakdown,bank_info,payment_terms
+
 
 #set page(
   paper: "a4",

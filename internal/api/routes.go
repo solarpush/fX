@@ -52,6 +52,7 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 	// --- Routes Publiques (Auth non requise) ---
 	api.HandleFunc("", handler.HandleAPIInfo).Methods(http.MethodGet)
 	api.HandleFunc("/", handler.HandleAPIInfo).Methods(http.MethodGet)
+	api.HandleFunc("/schema/invoice", handler.HandleInvoiceSchema).Methods(http.MethodGet, http.MethodOptions)
 	api.HandleFunc("/auth/login", handler.HandleLogin).Methods(http.MethodPost, http.MethodOptions)
 	api.HandleFunc("/auth/logout", handler.HandleLogout).Methods(http.MethodPost, http.MethodOptions)
 
@@ -73,6 +74,7 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 	// Routes de templates
 	protectedApi.HandleFunc("/templates", handler.HandleListTemplates).Methods(http.MethodGet, http.MethodOptions)
 	protectedApi.HandleFunc("/templates", handler.HandleCreateTemplate).Methods(http.MethodPost, http.MethodOptions)
+	protectedApi.HandleFunc("/templates/rules", handler.HandleTemplateRules).Methods(http.MethodGet, http.MethodOptions)
 	protectedApi.HandleFunc("/templates/{id}", handler.HandleGetTemplate).Methods(http.MethodGet, http.MethodOptions)
 	protectedApi.HandleFunc("/templates/{id}", handler.HandleUpdateTemplate).Methods(http.MethodPut, http.MethodOptions)
 	protectedApi.HandleFunc("/templates/{id}", handler.HandleDeleteTemplate).Methods(http.MethodDelete, http.MethodOptions)
