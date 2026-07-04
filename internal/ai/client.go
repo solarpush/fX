@@ -30,7 +30,6 @@ type GenerateRequest struct {
 	CurrentTypst  string   `json:"current_typst"`
 	DataSchema    string   `json:"data_schema"`
 	TargetProfile string   `json:"target_profile,omitempty"`
-	Capabilities  []string `json:"capabilities,omitempty"`
 }
 
 type ollamaRequest struct {
@@ -80,7 +79,9 @@ RÈGLES CRITIQUES :
    - Si tu utilises {{#if condition}} bloc {{/if}}, place le sur une ou des lignes complètes pour ne pas casser la syntaxe Typst si la condition est fausse (car Handlebars supprimera le bloc entier).
    - Place tes conditions Handlebars de manière à générer des lignes complètes dans Typst, surtout dans les tableaux.
 
-8. NE GÉNÈRE JAMAIS les commentaires "// @profile:" ou "// @capabilities:" en haut du fichier. L'interface s'en occupe automatiquement.
+8. NE GÉNÈRE JAMAIS le commentaire "// @profile:" en haut du fichier. L'interface s'en occupe automatiquement.
+9. Adapte la langue des libellés (ex: "Facture", "TVA", "SIRET") et le format (ex: dates, devises) à la langue et aux spécificités culturelles déduites de la demande de l'utilisateur.
+10. MAPPING DES CODES : Si une variable contient un code standard (ex: type_code de paiement, unité H87), N'ÉCRIS PAS une longue suite de conditions '#if code == "30" ... #else if ...' directement dans le rendu. Utilise toujours un dictionnaire Typst (#let dict = ("30": "Virement", "48": "Carte")) et la méthode '.at(clé, default: "Inconnu")' pour un code propre et lisible.
 
 EXEMPLE DE TABLEAU AVEC BOUCLE HANDLEBARS :
 #table(
@@ -97,7 +98,6 @@ EXEMPLE DE VARIABLE :
 
 	userPrompt := fmt.Sprintf(`Voici le contexte :
 Profil cible Factur-X : %s
-Capacités/Options requises : %v
 
 Schema des données (JSON) qui seront injectées dans le template :
 %s
@@ -106,7 +106,7 @@ Code Typst actuel (si existant) :
 %s
 
 Demande de l'utilisateur :
-%s`, req.TargetProfile, req.Capabilities, req.DataSchema, req.CurrentTypst, req.Prompt)
+%s`, req.TargetProfile, req.DataSchema, req.CurrentTypst, req.Prompt)
 
 	if c.config.Provider == "ollama" {
 		return c.generateOllama(systemPrompt, userPrompt)
@@ -242,16 +242,17 @@ RÈGLES CRITIQUES :
    N'utilise QUE des champs déclarés dans le schema.
 8. IMAGES : Typst n'accepte PAS de base64 dans #image(). Pour afficher une image fournie en base64 dans les
    données, utilise le helper spécial {{bytes chemin}} qui décode le base64 en octets Typst.
-   - Écris SANS guillemets : #image({{bytes logo}}, width: 4cm)
    - {{bytes chemin}} renvoie 'none' si la donnée est absente/invalide : protège l'affichage avec une condition Typst :
-     #let img = {{bytes logo}}
+     #let img = {{bytes chemin}}
      #if img != none { image(img, width: 4cm) } else { rect(width: 4cm, height: 3cm, fill: luma(230)) }
-9. POLICES : utilise UNIQUEMENT des familles réellement installées dans l'environnement (Linux/Alpine) :
+9. MAPPING DES CODES : Si une variable contient un code standard métier, N'ÉCRIS PAS une longue suite de conditions '#if code == "A" ... #else if ...' directement dans le rendu. Utilise toujours un dictionnaire Typst (#let dict = ("A": "Mot 1", "B": "Mot 2")) et la méthode '.at(clé, default: "Inconnu")' pour un code propre et lisible.
+10. POLICES : utilise UNIQUEMENT des familles réellement installées dans l'environnement (Linux/Alpine) :
    "Liberation Sans", "Liberation Serif", "Liberation Mono",
    "DejaVu Sans", "DejaVu Serif", "DejaVu Sans Mono",
    "Open Sans", "Noto Sans", "Noto Serif".
    N'invente JAMAIS d'autres polices et n'utilise PAS les familles génériques "serif"/"sans-serif"/"monospace"
-   ni des polices propriétaires (Arial, Times New Roman, Helvetica, Calibri...). Elles ne sont pas disponibles.`
+   ni des polices propriétaires (Arial, Times New Roman, Helvetica, Calibri...). Elles ne sont pas disponibles.
+10. Adapte la langue des textes fixes et le format des données à la langue de la demande de l'utilisateur.`
 
 	userPrompt := fmt.Sprintf(`Voici le JSON Schema décrivant les données disponibles pour le template :
 %s

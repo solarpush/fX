@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -336,4 +337,287 @@ func (h *Handler) HandleAIGenerate(w http.ResponseWriter, r *http.Request) {
 	WriteSuccess(w, map[string]string{
 		"typst_code": result,
 	})
+}
+
+// HandleInvoiceSchema expose le JSON Schema de la facture publiquement.
+func (h *Handler) HandleInvoiceSchema(w http.ResponseWriter, r *http.Request) {
+	// Essayer de trouver le fichier par rapport au répertoire courant
+	paths := []string{
+		"docs/invoice.schema.json",
+		"../../docs/invoice.schema.json", // si exécuté depuis cmd/fx
+	}
+
+	var data []byte
+	var err error
+	for _, p := range paths {
+		data, err = os.ReadFile(p)
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "schema not found on server")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// TemplateRulesResponse représente la réponse contenant les règles dynamiques
+type TemplateRulesResponse struct {
+	RequiredTags []string        `json:"required_tags"`
+	OptionalTags []string        `json:"optional_tags"`
+	AIPrompt     string          `json:"ai_prompt"`
+	MockData     invoice.Invoice `json:"mock_data"`
+}
+
+// HandleTemplateRules retourne les règles de template dynamiquement
+func (h *Handler) HandleTemplateRules(w http.ResponseWriter, r *http.Request) {
+	profileParam := r.URL.Query().Get("profile")
+	if profileParam == "" {
+		profileParam = string(invoice.ProfileEN16931)
+	}
+
+	profile := invoice.Profile(profileParam)
+	if !profile.IsValid() {
+		WriteError(w, http.StatusBadRequest, "invalid profile")
+		return
+	}
+
+	// Pour les règles du template (front-end et IA), on utilise toujours EXTENDED
+	// afin que le template généré soit universel et fonctionne avec n'importe quel profil plus tard.
+	templateReqs := invoice.ProfileEXTENDED.GetRequirements()
+
+	required := []string{
+		"invoice.number", "invoice.type", "invoice.issue_date", "invoice.currency",
+		"totals.subtotal_excl_vat", "totals.total_vat", "totals.total_incl_vat", "totals.amount_due",
+		"seller.name", "seller.global_id.value",
+		"buyer.name", "buyer.global_id.value",
+	}
+
+	optional := []string{
+		"invoice.due_date", "invoice.purchase_order_ref", "invoice.note", "invoice.business_process", "invoice.contract_ref",
+		"totals.allowance_total", "totals.charge_total", "totals.tax_basis_total", "totals.prepaid_amount",
+		"buyer.contact.phone", "buyer.contact.email", "buyer.vat_id",
+		"unit", "product_code", "product_code_scheme",
+		"is_charge", "amount", "reason", "reason_code", "vat_category_code",
+	}
+
+	if templateReqs.RequireAddress {
+		required = append(required,
+			"seller.address.street", "seller.address.postal_code", "seller.address.city", "seller.address.country",
+			"buyer.address.street", "buyer.address.postal_code", "buyer.address.city", "buyer.address.country",
+		)
+	}
+
+	if templateReqs.RequireVatID {
+		required = append(required, "seller.vat_id")
+	}
+
+	if templateReqs.RequireVatBreakdown {
+		required = append(required, "totals.vat_breakdown") // Représente la boucle
+	}
+
+	if templateReqs.RequireLineDetails {
+		required = append(required, "lines") // Représente la boucle
+	}
+
+	if templateReqs.RequirePaymentTerms {
+		required = append(required, "payment.terms", "payment.payment_means.type_code")
+	} else {
+		optional = append(optional, "payment.terms", "payment.payment_means.type_code")
+	}
+
+	if templateReqs.RequireBankInfo {
+		required = append(required, "seller.bank.iban", "seller.bank.bic")
+	} else {
+		optional = append(optional, "seller.bank.iban", "seller.bank.bic")
+	}
+
+	if templateReqs.RequireContact {
+		required = append(required, "seller.contact.phone", "seller.contact.email")
+	} else {
+		optional = append(optional, "seller.contact.phone", "seller.contact.email")
+	}
+
+	tagDescriptions := map[string]string{
+		"invoice.number":             "Numéro de la facture",
+		"invoice.type":               "Code type de document (ex: 380 pour facture)",
+		"invoice.issue_date":         "Date d'émission de la facture",
+		"invoice.currency":           "Devise (ex: EUR)",
+		"invoice.due_date":           "Date d'échéance",
+		"invoice.purchase_order_ref": "Référence de commande (PO)",
+		"invoice.note":               "Note ou commentaire général",
+		"invoice.business_process":   "Identifiant du processus métier (ex: A1)",
+		"invoice.contract_ref":       "Référence du contrat",
+
+		"seller.name":                "Nom de l'entreprise vendeuse",
+		"seller.global_id.value":     "Identifiant légal du vendeur (ex: SIRET, SIREN)",
+		"seller.vat_id":              "Numéro de TVA intracommunautaire du vendeur",
+		"seller.address.street":      "Rue de l'adresse du vendeur",
+		"seller.address.postal_code": "Code postal du vendeur",
+		"seller.address.city":        "Ville du vendeur",
+		"seller.address.country":     "Code pays du vendeur (ex: FR)",
+		"seller.contact.phone":       "Téléphone du contact vendeur",
+		"seller.contact.email":       "Email du contact vendeur",
+		"seller.bank.iban":           "IBAN du compte bancaire du vendeur",
+		"seller.bank.bic":            "Code BIC/SWIFT de la banque",
+
+		"buyer.name":                "Nom du client",
+		"buyer.global_id.value":     "Identifiant légal du client (ex: SIRET, SIREN)",
+		"buyer.vat_id":              "Numéro de TVA intracommunautaire du client",
+		"buyer.address.street":      "Rue de l'adresse du client",
+		"buyer.address.postal_code": "Code postal du client",
+		"buyer.address.city":        "Ville du client",
+		"buyer.address.country":     "Code pays du client (ex: FR)",
+		"buyer.contact.phone":       "Téléphone du contact client",
+		"buyer.contact.email":       "Email du contact client",
+
+		"lines":               "BOUCLE: Liste des lignes de la facture (utiliser avec {{#each lines}})",
+		"unit": "Unité de mesure UN/ECE Rec 20 (ex: C62=Unité, H87=Pièce, HUR=Heure). N'écris jamais le code brut, traduis-le (ex: utilise un Helper si disponible ou écris 'Unité')",
+		"product_code":        "Code de l'article (dans la boucle lines)",
+		"product_code_scheme": "Type de code article (ex: GTIN)",
+
+		"totals.subtotal_excl_vat": "Total HT (Hors Taxes)",
+		"totals.total_vat":         "Montant total de la TVA",
+		"totals.total_incl_vat":    "Total TTC (Toutes Taxes Comprises)",
+		"totals.amount_due":        "Montant net à payer",
+		"totals.allowance_total":   "Total des réductions globales",
+		"totals.charge_total":      "Total des frais supplémentaires",
+		"totals.tax_basis_total":   "Base d'imposition globale",
+		"totals.prepaid_amount":    "Montant déjà payé (acompte)",
+
+		"totals.vat_breakdown":            "BOUCLE: Détail de la TVA par taux (utiliser avec {{#each totals.vat_breakdown}})",
+		"payment.terms":                   "Conditions de paiement (texte libre)",
+		"payment.payment_means.type_code": "Moyen de paiement UNTDID 4461 (ex: 30=Virement, 48=Carte). Traduis le code !",
+
+		"is_charge":         "Indique si c'est un frais (true) ou une réduction (false)",
+		"amount":            "Montant du frais/réduction",
+		"reason":            "Motif du frais/réduction (texte libre)",
+		"reason_code":       "Code motif UNTDID 7161 (ex: 95=Remise, ABL=Livraison). Traduis le code !",
+		"vat_category_code": "Code catégorie de TVA (ex: S, Z, E)",
+	}
+
+	formatTags := func(tags []string) string {
+		var result string
+		for _, tag := range tags {
+			desc, ok := tagDescriptions[tag]
+			if !ok {
+				desc = "Donnée Factur-X"
+			}
+			result += fmt.Sprintf("- {{%s}} : %s\n", tag, desc)
+		}
+		return result
+	}
+
+	aiPrompt := "=== CHAMPS STRICTEMENT OBLIGATOIRES (TU DOIS ABSOLUMENT LES AFFICHER DANS LE TEMPLATE) ===\n"
+	aiPrompt += formatTags(required) + "\n"
+	aiPrompt += "=== CHAMPS OPTIONNELS (SELON LE PROFIL OU LES CAPACITÉS DEMANDÉES) ===\n"
+	aiPrompt += formatTags(optional) + "\n"
+	// --- Génération d'un Mock 100% valide métier ---
+	// La validation Factur-X est mathématiquement stricte, on génère un jeu de données parfait
+	// mockReqs := profile.GetRequirements()
+	now := time.Now()
+	mock := invoice.Invoice{
+		Version: "1.0",
+		Profile: profile,
+		Invoice: invoice.Details{
+			Number:    "PREV-001",
+			IssueDate: now,
+			Type:      invoice.TypeInvoice,
+			Currency:  "EUR",
+			Note:      "Ceci est un aperçu généré avec des données fictives.",
+		},
+		Seller: invoice.Party{
+			Name: "Entreprise Exemple",
+			GlobalID: &invoice.GlobalID{
+				SchemeID: "0009",
+				Value:    "12345678900012",
+			},
+			Address: invoice.Address{
+				Street:     "123 Rue de la République",
+				City:       "Paris",
+				PostalCode: "75001",
+				Country:    "FR",
+			},
+			Contact: &invoice.Contact{
+				Phone: "+33 1 23 45 67 89",
+				Email: "contact@entreprise.com",
+			},
+		},
+		Buyer: invoice.Party{
+			Name: "Client Exemple",
+			GlobalID: &invoice.GlobalID{
+				SchemeID: "0009",
+				Value:    "98765432100098",
+			},
+			Address: invoice.Address{
+				Street:     "456 Avenue des Champs",
+				City:       "Lyon",
+				PostalCode: "69001",
+				Country:    "FR",
+			},
+			Contact: &invoice.Contact{
+				Phone: "+33 1 98 76 54 32",
+				Email: "achat@client.com",
+			},
+		},
+		Lines: []invoice.Line{
+			{
+				ID:           "1",
+				Description:  "Article de démonstration",
+				Quantity:     1,
+				Unit:         invoice.UnitPiece,
+				UnitPrice:    100.0,
+				VatRate:      20.0,
+				VatAmount:    20.0,
+				TotalExclVat: 100.0,
+				TotalInclVat: 120.0,
+			},
+		},
+		Totals: invoice.Totals{
+			SubtotalExclVat: 100.0,
+			TotalVat:        20.0,
+			TotalInclVat:    120.0,
+			AmountDue:       120.0,
+			VatBreakdown: []invoice.VatBreakdown{
+				{
+					Rate:          20.0,
+					TaxableAmount: 100.0,
+					VatAmount:     20.0,
+				},
+			},
+		},
+	}
+
+	mock.Seller.VatID = "FR12345678901"
+	mock.Buyer.VatID = "FR98765432109"
+
+	mock.Seller.Bank = &invoice.Bank{
+		IBAN:        "FR7630001000011234567890123",
+		BIC:         "SOCGFRPP",
+		BankName:    "Banque Exemple",
+		AccountName: "Entreprise Exemple",
+	}
+
+	dueDate := now.Add(30 * 24 * time.Hour)
+	mock.Payment = &invoice.Payment{
+		Terms:   "Paiement à 30 jours",
+		DueDate: dueDate,
+		PaymentMeans: &invoice.PaymentMeans{
+			TypeCode: invoice.PaymentMeansTransfer,
+		},
+	}
+
+	resp := TemplateRulesResponse{
+		RequiredTags: required,
+		OptionalTags: optional,
+		AIPrompt:     aiPrompt,
+		MockData:     mock,
+	}
+
+	WriteSuccess(w, resp)
 }

@@ -1,5 +1,4 @@
 // @profile: EN16931
-// @capabilities: vat_breakdown,bank_info,payment_terms
 
 #set page(
   paper: "a4",
@@ -12,12 +11,29 @@
   hyphenate: false
 )
 
+// Dictionnaires de traduction pour la conformité Factur-X
+#let doc-types = (
+  "380": "Facture",
+  "381": "Avoir",
+  "384": "Facture rectificative",
+  "261": "Note de débit"
+)
+
+#let payment-means = (
+  "10": "Espèces",
+  "30": "Virement bancaire",
+  "42": "Paiement bancaire",
+  "48": "Carte bancaire",
+  "49": "Prélèvement",
+  "97": "Clearing"
+)
+
 // Palette de couleurs moderne et professionnelle
-#let primary = rgb("#1e293b")   // Slate 800 - Très élégant et lisible
-#let secondary = rgb("#64748b") // Slate 500 - Tons neutres pour éléments secondaires
-#let accent = rgb("#0f766e")    // Deep Teal - Accent professionnel et distinctif
-#let card-bg = rgb("#f8fafc")   // Slate 50 - Arrière-plan doux pour les encadrés
-#let border-color = rgb("#e2e8f0") // Slate 200 - Bordures fines et discrètes
+#let primary = rgb("#1e293b")   // Slate 800
+#let secondary = rgb("#64748b") // Slate 500
+#let accent = rgb("#0f766e")    // Deep Teal
+#let card-bg = rgb("#f8fafc")   // Slate 50
+#let border-color = rgb("#e2e8f0") // Slate 200
 
 // --- EN-TÊTE PRINCIPAL ---
 #grid(
@@ -49,7 +65,8 @@
   ],
   [
     #align(right)[
-      #text(size: 28pt, weight: "black", fill: accent, tracking: 2pt)[FACTURE] \
+      #let doc-name = doc-types.at("{{invoice.type}}", default: "Facture")
+      #text(size: 26pt, weight: "black", fill: accent, tracking: 2pt)[#upper(doc-name)] \
       #v(-6pt)
       #text(size: 11pt, weight: "bold", fill: primary)[N° {{invoice.number}}]
       
@@ -62,6 +79,7 @@
         align: (right, right),
         [#text(fill: secondary, size: 9pt)[Date d'émission :]], [#text(weight: "semibold", size: 9pt)[{{invoice.issue_date}}]],
         [#text(fill: secondary, size: 9pt)[Date d'échéance :]], [#text(weight: "semibold", fill: accent, size: 9pt)[{{invoice.due_date}}]],
+        [#text(fill: secondary, size: 9pt)[Devise :]], [#text(weight: "semibold", size: 9pt)[{{invoice.currency}}]],
       )
     ]
   ]
@@ -80,9 +98,8 @@
     #line(length: 30%, stroke: 1.5pt + accent)
     #v(6pt)
     #text(size: 8.5pt, fill: secondary)[
-      {{#if payment.method}}
-      *Méthode :* {{payment.method}} \
-      {{/if}}
+      #let pay-method = payment-means.at("{{payment.payment_means.type_code}}", default: "Autre")
+      *Moyen :* #pay-method \
       {{#if payment.terms}}
       *Conditions :* {{payment.terms}} \
       {{/if}}
@@ -141,7 +158,7 @@
 
 // --- TABLEAU DES LIGNES DE FACTURE ---
 #table(
-  columns: (1fr, 60pt, 60pt, 80pt, 70pt),
+  columns: (1fr, 50pt, 50pt, 80pt, 60pt),
   align: (left + horizon, right + horizon, center + horizon, right + horizon, right + horizon),
   inset: 9pt,
   stroke: (x, y) => if y == 0 {
@@ -162,7 +179,7 @@
   [#text(fill: white, weight: "bold", size: 9pt)[Prix U.]], 
   [#text(fill: white, weight: "bold", size: 9pt)[TVA]],
   {{#each lines}}
-  [{{description}}], [{{quantity}}], [{{unit}}], [{{unit_price}} €], [{{vat_rate}} %],
+  [{{description}}], [{{quantity}}], [{{unit}}], [{{unit_price}} {{invoice.currency}}], [{{vat_rate}} %],
   {{/each}}
 )
 
@@ -187,7 +204,7 @@
       [#text(size: 8pt, weight: "bold", fill: secondary)[Base HT]],
       [#text(size: 8pt, weight: "bold", fill: secondary)[Montant TVA]],
       {{#each totals.vat_breakdown}}
-      [{{rate}}%], [{{taxable_amount}} €], [{{vat_amount}} €],
+      [{{rate}}%], [{{taxable_amount}} {{invoice.currency}}], [{{vat_amount}} {{invoice.currency}}],
       {{/each}}
     )
     {{/if}}
@@ -206,10 +223,10 @@
           align: (left, right),
           stroke: (x, y) => if y >= 2 { (top: 0.5pt + border-color) } else { none },
           inset: (x: 0pt, y: 5pt),
-          [#text(size: 9pt, fill: secondary)[Total HT]], [#text(size: 9pt)[{{totals.subtotal_excl_vat}} €]],
-          [#text(size: 9pt, fill: secondary)[Total TVA]], [#text(size: 9pt)[{{totals.total_vat}} €]],
-          [#text(size: 9.5pt, weight: "bold", fill: primary)[Total TTC]], [#text(size: 9.5pt, weight: "bold", fill: primary)[{{totals.total_incl_vat}} €]],
-          [#text(size: 11pt, weight: "bold", fill: accent)[Net à payer]], [#text(size: 12pt, weight: "black", fill: accent)[{{totals.amount_due}} €]],
+          [#text(size: 9pt, fill: secondary)[Total HT]], [#text(size: 9pt)[{{totals.subtotal_excl_vat}} {{invoice.currency}}]],
+          [#text(size: 9pt, fill: secondary)[Total TVA]], [#text(size: 9pt)[{{totals.total_vat}} {{invoice.currency}}]],
+          [#text(size: 9.5pt, weight: "bold", fill: primary)[Total TTC]], [#text(size: 9.5pt, weight: "bold", fill: primary)[{{totals.total_incl_vat}} {{invoice.currency}}]],
+          [#text(size: 11pt, weight: "bold", fill: accent)[Net à payer]], [#text(size: 12pt, weight: "black", fill: accent)[{{totals.amount_due}} {{invoice.currency}}]],
         )
       ]
     ]

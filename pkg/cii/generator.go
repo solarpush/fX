@@ -241,10 +241,10 @@ type OccurrenceDateTime struct {
 
 type ApplicableHeaderTradeSettlement struct {
 	InvoiceCurrencyCode                             CurrencyCode                                    `xml:"ram:InvoiceCurrencyCode"`
+	SpecifiedTradeSettlementPaymentMeans            []SpecifiedTradeSettlementPaymentMeans          `xml:"ram:SpecifiedTradeSettlementPaymentMeans,omitempty"`
 	ApplicableTradeTax                              []HeaderTradeTax                                `xml:"ram:ApplicableTradeTax"`
 	SpecifiedTradeAllowanceCharge                   []SpecifiedTradeAllowanceCharge                 `xml:"ram:SpecifiedTradeAllowanceCharge,omitempty"`
 	SpecifiedTradePaymentTerms                      *TradePaymentTerms                              `xml:"ram:SpecifiedTradePaymentTerms,omitempty"`
-	SpecifiedTradeSettlementPaymentMeans            []SpecifiedTradeSettlementPaymentMeans          `xml:"ram:SpecifiedTradeSettlementPaymentMeans,omitempty"`
 	SpecifiedTradeSettlementHeaderMonetarySummation SpecifiedTradeSettlementHeaderMonetarySummation `xml:"ram:SpecifiedTradeSettlementHeaderMonetarySummation"`
 }
 
@@ -484,7 +484,7 @@ func toCII(inv *invoice.Invoice) *CrossIndustryInvoice {
 		},
 		ExchangedDocument: ExchangedDocument{
 			ID:       ID{Value: inv.Invoice.Number},
-			TypeCode: TypeCode{Value: inv.Invoice.Type},
+			TypeCode: TypeCode{Value: string(inv.Invoice.Type)},
 			IssueDateTime: IssueDateTime{
 				DateTimeString: DateTimeString{
 					Format: "102",
@@ -729,7 +729,7 @@ func toLineItem(line *invoice.Line, currency string) SupplyChainTradeLineItem {
 		},
 		SpecifiedLineTradeDelivery: SpecifiedLineTradeDelivery{
 			BilledQuantity: Quantity{
-				UnitCode: unit,
+				UnitCode: string(unit),
 				Value:    line.Quantity,
 			},
 		},
@@ -859,7 +859,7 @@ func toHeaderTradeSettlement(inv *invoice.Invoice) ApplicableHeaderTradeSettleme
 
 	// Add payment means (Phase 4)
 	if inv.Payment != nil && inv.Payment.PaymentMeans != nil {
-		pm := toPaymentMeans(inv.Payment.PaymentMeans, inv.Invoice.Currency)
+		pm := toPaymentMeans(inv.Payment.PaymentMeans, inv)
 		settlement.SpecifiedTradeSettlementPaymentMeans = []SpecifiedTradeSettlementPaymentMeans{pm}
 	}
 
@@ -916,7 +916,7 @@ func toAllowanceCharge(ac *invoice.AllowanceCharge, currency string) SpecifiedTr
 	}
 
 	if ac.ReasonCode != "" {
-		result.ReasonCode = &ReasonCode{Value: ac.ReasonCode}
+		result.ReasonCode = &ReasonCode{Value: string(ac.ReasonCode)}
 	}
 
 	if ac.BaseAmount > 0 {
@@ -956,7 +956,7 @@ func toLineAllowanceCharge(ac *invoice.AllowanceCharge, currency string) Specifi
 	}
 
 	if ac.ReasonCode != "" {
-		result.ReasonCode = &ReasonCode{Value: ac.ReasonCode}
+		result.ReasonCode = &ReasonCode{Value: string(ac.ReasonCode)}
 	}
 
 	if ac.BaseAmount > 0 {
@@ -995,9 +995,9 @@ func toDocumentReference(ref *invoice.DocumentReference) AdditionalReferencedDoc
 	return result
 }
 
-func toPaymentMeans(pm *invoice.PaymentMeans, currency string) SpecifiedTradeSettlementPaymentMeans {
+func toPaymentMeans(pm *invoice.PaymentMeans, inv *invoice.Invoice) SpecifiedTradeSettlementPaymentMeans {
 	result := SpecifiedTradeSettlementPaymentMeans{
-		TypeCode: TypeCode{Value: pm.TypeCode},
+		TypeCode: TypeCode{Value: string(pm.TypeCode)},
 	}
 
 	if pm.Information != "" {
@@ -1008,15 +1008,20 @@ func toPaymentMeans(pm *invoice.PaymentMeans, currency string) SpecifiedTradeSet
 		result.PaymentReference = &PaymentReference{Value: pm.PaymentReference}
 	}
 
+	var payeeBank *invoice.Bank
 	if pm.PayeeAccount != nil {
-		account := &CreditorFinancialAccount{}
+		payeeBank = pm.PayeeAccount
+	} else if inv.Seller.Bank != nil {
+		payeeBank = inv.Seller.Bank
+	}
 
-		if pm.PayeeAccount.IBAN != "" {
-			account.IBANID = &IBANID{Value: pm.PayeeAccount.IBAN}
+	if payeeBank != nil && payeeBank.IBAN != "" {
+		account := &CreditorFinancialAccount{
+			IBANID: &IBANID{Value: payeeBank.IBAN},
 		}
 
-		if pm.PayeeAccount.AccountName != "" {
-			account.AccountName = &AccountName{Value: pm.PayeeAccount.AccountName}
+		if payeeBank.AccountName != "" {
+			account.AccountName = &AccountName{Value: payeeBank.AccountName}
 		}
 
 		result.PayeePartyCreditorFinancialAccount = account

@@ -25,8 +25,7 @@ export class TemplateEditor implements OnInit, OnDestroy {
 
   protected readonly template = signal<Template | null>(null);
   protected readonly typstCode = signal('');
-  protected readonly targetProfile = signal('EN16931');
-  protected readonly capabilities = signal<string[]>(['vat_breakdown']);
+  protected readonly targetProfile = signal<string>('EN16931');
   protected readonly aiPrompt = signal('');
   protected readonly isGenerating = signal(false);
   protected readonly previewBlob = signal<Blob | null>(null);
@@ -40,16 +39,6 @@ export class TemplateEditor implements OnInit, OnDestroy {
     this.syncMetadataToCode();
   }
 
-  protected toggleCapability(cap: string) {
-    const current = this.capabilities();
-    if (current.includes(cap)) {
-      this.capabilities.set(current.filter((c) => c !== cap));
-    } else {
-      this.capabilities.set([...current, cap]);
-    }
-    this.syncMetadataToCode();
-  }
-
   private syncMetadataToCode() {
     let code = this.typstCode();
 
@@ -60,27 +49,7 @@ export class TemplateEditor implements OnInit, OnDestroy {
       code = `// @profile: ${this.targetProfile()}\n` + code;
     }
 
-    // Update capabilities
-    const capsStr = this.capabilities().join(',');
-    if (/\/\/\s*@capabilities:.*/.test(code)) {
-      if (capsStr) {
-        code = code.replace(/\/\/\s*@capabilities:.*/, `// @capabilities: ${capsStr}`);
-      } else {
-        code = code.replace(/\/\/\s*@capabilities:.*\n?/, '');
-      }
-    } else if (capsStr) {
-      if (/\/\/\s*@profile:.*/.test(code)) {
-        code = code.replace(/\/\/\s*@profile:.*(\n|$)/, `$&// @capabilities: ${capsStr}\n`);
-      } else {
-        code = `// @capabilities: ${capsStr}\n` + code;
-      }
-    }
-
     this.typstCode.set(code);
-  }
-
-  protected hasCapability(cap: string): boolean {
-    return this.capabilities().includes(cap);
   }
 
   ngOnInit(): void {
@@ -120,14 +89,6 @@ export class TemplateEditor implements OnInit, OnDestroy {
       this.targetProfile.set(profileMatch[1]);
     }
 
-    const capMatch = code.match(/\/\/\s*@capabilities:\s*(.*)/);
-    if (capMatch) {
-      const caps = capMatch[1]
-        .split(',')
-        .map((c) => c.trim())
-        .filter((c) => c.length > 0);
-      this.capabilities.set(caps);
-    }
 
     // Debounce compilation
     if (this.compileTimeout) {
@@ -140,75 +101,31 @@ export class TemplateEditor implements OnInit, OnDestroy {
 
   protected readonly compilationError = signal<string | null>(null);
 
-  private validateTemplateRequirements(code: string, profile: string, caps: string[]): string[] {
-    const missing: string[] = [];
-    const check = (vars: string[], label: string) => {
-      if (!vars.some((v) => code.includes(v))) missing.push(label);
-    };
 
-    // Minimum (tous profils)
-    check(['invoice.number'], 'Numéro de facture (ex: {{invoice.number}})');
-    check(['seller.name'], 'Nom du vendeur (ex: {{seller.name}})');
-    check(['seller.address'], 'Adresse du vendeur (ex: {{seller.address.street}})');
-    check(['buyer.name'], 'Nom du client (ex: {{buyer.name}})');
-    check(['buyer.address'], 'Adresse du client (ex: {{buyer.address.street}})');
-    check(['totals.total_incl_vat'], 'Total TTC (ex: {{totals.total_incl_vat}})');
-
-    if (
-      profile === 'EN16931' ||
-      profile === 'EXTENDED' ||
-      caps.includes('lines') ||
-      caps.includes('vat_breakdown')
-    ) {
-      check(['totals.total_vat'], 'Total TVA (ex: {{totals.total_vat}})');
-      check(
-        ['seller.vat_id', 'seller.global_id'],
-        'Identifiant TVA ou SIRET vendeur (ex: {{seller.vat_id}})',
-      );
-      check(['lines'], 'Boucle des lignes de facture (ex: {{#each lines}})');
-    }
-
-    if (profile === 'EN16931' || profile === 'EXTENDED' || caps.includes('vat_breakdown')) {
-      check(['invoice.issue_date'], "Date d'émission (ex: {{invoice.issue_date}})");
-      check(
-        ['buyer.vat_id', 'buyer.global_id'],
-        'Identifiant TVA ou SIRET client (ex: {{buyer.vat_id}})',
-      );
-      check(['totals.vat_breakdown'], 'Détail de la TVA (ex: {{#each totals.vat_breakdown}})');
-    }
-
-    if (profile === 'EXTENDED' || caps.includes('payment_terms') || caps.includes('bank_info')) {
-      check(['payment.terms'], 'Conditions de paiement (ex: {{payment.terms}})');
-      if (profile === 'EXTENDED' || caps.includes('bank_info')) {
-        check(['seller.bank.iban'], 'Coordonnées bancaires IBAN (ex: {{seller.bank.iban}})');
-      }
-      if (profile === 'EXTENDED') {
-        check(['seller.contact'], 'Contact du vendeur (ex: {{seller.contact.email}} ou phone)');
-      }
-    }
-
-    return missing;
-  }
 
   private async compilePreview(): Promise<void> {
     this.isCompiling.set(true);
+    let rules: any = null;
 
-    // 1. Validation statique des variables requises par le profil
-    const missing = this.validateTemplateRequirements(
-      this.typstCode(),
-      this.targetProfile(),
-      this.capabilities(),
-    );
-    if (missing.length > 0) {
-      this.compilationError.set(
-        `Non conforme au profil ${this.targetProfile()}. Il manque :\n- ${missing.join('\n- ')}`,
-      );
-    } else {
+    try {
+      rules = await this.compiler.getRules(this.targetProfile()).toPromise();
+      const code = this.typstCode();
+      const missing = rules?.required_tags.filter((tag: string) => !code.includes(tag)) || [];
+      
+      if (missing.length > 0) {
+        this.compilationError.set(
+          `Non conforme au profil ${this.targetProfile()}. Il manque les variables suivantes :\n- ${missing.map((m: string) => '{{' + m + '}}').join('\n- ')}`,
+        );
+      } else {
+        this.compilationError.set('');
+      }
+    } catch (e) {
+      console.error('Failed to get template rules:', e);
       this.compilationError.set('');
     }
 
     try {
-      const blob = await this.compiler.compile(this.typstCode(), this.targetProfile()).toPromise();
+      const blob = await this.compiler.compile(this.typstCode(), this.targetProfile(), rules?.mock_data).toPromise();
       if (blob) {
         this.previewBlob.set(blob);
       }
@@ -292,7 +209,6 @@ export class TemplateEditor implements OnInit, OnDestroy {
 
   private getDefaultTemplate(): string {
     return `// @profile: EN16931
-// @capabilities: vat_breakdown,bank_info
 
 #set page(
   paper: "a4",
@@ -471,23 +387,19 @@ export class TemplateEditor implements OnInit, OnDestroy {
 
     this.isGenerating.set(true);
     try {
-      const dataSchema = `
-Variables Factur-X disponibles pour injection dans le template (syntaxe Handlebars ex: {{invoice.number}}) :
-- Vendeur: {{seller.name}}, {{seller.address.street}}, {{seller.address.postal_code}}, {{seller.address.city}}, {{seller.address.country}}, {{seller.global_id.value}}, {{seller.vat_id}}, {{seller.contact.phone}}, {{seller.contact.email}}, {{seller.bank.iban}}, {{seller.bank.bic}}
-- Client: {{buyer.name}}, {{buyer.address.street}}, {{buyer.address.postal_code}}, {{buyer.address.city}}, {{buyer.address.country}}, {{buyer.global_id.value}}, {{buyer.vat_id}}
-- Facture: {{invoice.number}}, {{invoice.type}}, {{invoice.issue_date}}, {{invoice.due_date}}, {{invoice.currency}}, {{invoice.purchase_order_ref}}, {{invoice.note}}
-- Lignes (boucle): {{#each lines}}...{{/each}}, {{description}}, {{quantity}}, {{unit}}, {{unit_price}}, {{vat_rate}}
-- Totaux: {{totals.subtotal_excl_vat}}, {{totals.total_vat}}, {{totals.total_incl_vat}}, {{totals.amount_due}}
-- TVA (boucle): {{#each totals.vat_breakdown}}...{{/each}}, {{rate}}, {{taxable_amount}}, {{vat_amount}}
-- Paiement: {{payment.terms}}, {{payment.method}}, {{payment.due_date}}
-`;
+      let dataSchema = '';
+      try {
+        const rules = await this.compiler.getRules(this.targetProfile()).toPromise();
+        dataSchema = "Variables Factur-X disponibles pour injection (syntaxe Handlebars ex: {{invoice.number}}) :\n\n" + (rules?.ai_prompt || '');
+      } catch (e) {
+        console.error('Failed to get template rules for AI:', e);
+      }
 
       const req = {
         prompt: this.aiPrompt(),
         current_typst: this.typstCode(),
-        data_schema: dataSchema,
         target_profile: this.targetProfile(),
-        capabilities: this.capabilities(),
+        data_schema: dataSchema,
       };
 
       const res = await this.http
@@ -502,12 +414,7 @@ Variables Factur-X disponibles pour injection dans le template (syntaxe Handleba
         code = code.replace(/\/\/\s*@capabilities:.*(\n|$)/gi, '');
 
         // Injecter le profil cible proprement depuis l'état de l'UI
-        const capsStr =
-          this.capabilities().length > 0
-            ? `// @capabilities: ${this.capabilities().join(',')}\n`
-            : '';
-        const header = `// @profile: ${this.targetProfile()}\n${capsStr}\n`;
-
+        const header = `// @profile: ${this.targetProfile()}\n\n`;
         code = header + code.trim();
 
         this.typstCode.set(code);

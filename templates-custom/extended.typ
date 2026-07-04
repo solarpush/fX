@@ -1,11 +1,10 @@
 // @profile: EXTENDED
-// @capabilities: vat_breakdown,bank_info
 
 #set page(
   paper: "a4",
   margin: (x: 2cm, y: 2.5cm), 
   header: align(right)[
-    #text(size: 8.5pt, fill: rgb("#94a3b8"))[Document généré automatiquement - Factur-X Compliant]
+    #text(size: 8.5pt, fill: rgb("#94a3b8"))[Document généré automatiquement - Conforme Factur-X (EXTENDED)]
   ],
   footer: [
     #place(top, line(length: 100%, stroke: 0.5pt + rgb("#e2e8f0")))
@@ -13,7 +12,10 @@
     #grid(
       columns: (1fr, 1fr),
       text(size: 8pt, fill: rgb("#64748b"))[
-        #strong[{{seller.name}}]         {{seller.address.street}}, {{seller.address.postal_code}} {{seller.address.city}}, {{seller.address.country}}         #if "{{seller.vat_id}}" != "" [TVA : {{seller.vat_id}}]
+        #strong[{{seller.name}}] \
+        {{seller.address.street}}, {{seller.address.postal_code}} {{seller.address.city}}, {{seller.address.country}} \
+        #if "{{seller.vat_id}}" != "" [TVA : {{seller.vat_id}} ]
+        #if "{{seller.global_id.value}}" != "" [| SIRET : {{seller.global_id.value}}]
       ],
       align(right + bottom)[
         #text(size: 8pt, fill: rgb("#64748b"))[Page #context counter(page).display("1", both: false)]
@@ -28,6 +30,16 @@
   fill: rgb("#1e293b")
 )
 
+#let payment_codes = (
+  "10": "Espèces",
+  "20": "Chèque",
+  "30": "Virement bancaire",
+  "42": "Paiement sur compte",
+  "48": "Carte bancaire",
+  "49": "Prélèvement",
+  "97": "Compensation"
+)
+
 #grid(
   columns: (1fr, 1fr),
   gutter: 1cm,
@@ -35,14 +47,20 @@
     #text(size: 18pt, weight: "bold", fill: rgb("#0f172a"))[{{seller.name}}]
     #v(0.8em)
     #text(size: 9.5pt, fill: rgb("#334155"))[
-      {{seller.address.street}}       {{seller.address.postal_code}} {{seller.address.city}}       {{seller.address.country}}       #if "{{seller.contact.phone}}" != "" [Tél : {{seller.contact.phone}}  ]
+      {{seller.address.street}} \
+      {{seller.address.postal_code}} {{seller.address.city}} \
+      {{seller.address.country}} \
+      #if "{{seller.global_id.value}}" != "" [SIRET : {{seller.global_id.value}} \ ]
+      #if "{{seller.vat_id}}" != "" [TVA Intracom. : {{seller.vat_id}} \ ]
+      #if "{{seller.contact.phone}}" != "" [Tél : {{seller.contact.phone}} \ ]
       #if "{{seller.contact.email}}" != "" [Mél : {{seller.contact.email}}]
     ]
   ],
   align(right)[
     #text(size: 20pt, weight: "light", fill: rgb("#0f172a"))[
       #if "{{invoice.type}}" == "381" [AVOIR] else if "{{invoice.type}}" == "384" [FACTURE RECTIFICATIVE] else [FACTURE]
-    ]     #text(size: 12pt, weight: "bold", fill: rgb("#64748b"))[N° {{invoice.number}}]
+    ] \
+    #text(size: 12pt, weight: "bold", fill: rgb("#64748b"))[N° {{invoice.number}}]
     
     #v(1.5em)
     #grid(
@@ -60,7 +78,7 @@
   ]
 )
 
-#v(2.5cm)
+#v(2cm)
 
 #grid(
   columns: (3fr, 2fr),
@@ -71,13 +89,17 @@
     #text(size: 11pt, weight: "bold", fill: rgb("#0f172a"))[{{buyer.name}}]
     #v(0.3em)
     #text(size: 9.5pt, fill: rgb("#334155"))[
-      {{buyer.address.street}}       {{buyer.address.postal_code}} {{buyer.address.city}}       {{buyer.address.country}}       #if "{{buyer.vat_id}}" != "" [N° TVA : {{buyer.vat_id}}]
+      {{buyer.address.street}} \
+      {{buyer.address.postal_code}} {{buyer.address.city}} \
+      {{buyer.address.country}} \
+      #if "{{buyer.global_id.value}}" != "" [SIRET/SIREN : {{buyer.global_id.value}} \ ]
+      #if "{{buyer.vat_id}}" != "" [N° TVA : {{buyer.vat_id}}]
     ]
   ],
   []
 )
 
-#v(2cm)
+#v(1.5cm)
 
 #table(
   columns: (1fr, auto, auto, auto, auto),
@@ -113,7 +135,8 @@
     
     #v(1em)
     #if "{{invoice.note}}" != "" [
-      #text(size: 8.5pt, weight: "bold", fill: rgb("#94a3b8"))[NOTE]       #v(0.3em)
+      #text(size: 8.5pt, weight: "bold", fill: rgb("#94a3b8"))[NOTE] \
+      #v(0.3em)
       #text(size: 8.5pt, fill: rgb("#475569"))[{{invoice.note}}]
     ]
   ],
@@ -136,7 +159,7 @@
   ]
 )
 
-#v(2cm)
+#v(1.5cm)
 
 #grid(
   columns: (1fr, 1fr),
@@ -145,7 +168,10 @@
     #text(size: 8.5pt, weight: "bold", fill: rgb("#94a3b8"))[INFORMATIONS DE PAIEMENT]
     #v(0.5em)
     #text(size: 8.5pt, fill: rgb("#475569"))[
-      #if "{{payment.method}}" != "" [Mode de règlement : {{payment.method}}  ]
+      #let code_moyen = "{{payment.payment_means.type_code}}"
+      #if code_moyen != "" [
+        Mode de règlement : #payment_codes.at(code_moyen, default: "Autre (" + code_moyen + ")") \
+      ]
       #if "{{payment.terms}}" != "" [Conditions : {{payment.terms}}]
     ]
   ],
@@ -154,7 +180,8 @@
       #text(size: 8.5pt, weight: "bold", fill: rgb("#94a3b8"))[COORDONNÉES BANCAIRES]
       #v(0.5em)
       #text(size: 8.5pt, fill: rgb("#475569"))[
-        IBAN : {{seller.bank.iban}}         #if "{{seller.bank.bic}}" != "" [BIC : {{seller.bank.bic}}]
+        IBAN : {{seller.bank.iban}} \
+        #if "{{seller.bank.bic}}" != "" [BIC : {{seller.bank.bic}}]
       ]
     ]
   ]

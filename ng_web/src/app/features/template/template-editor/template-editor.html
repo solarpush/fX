@@ -77,38 +77,7 @@
             <option value="EXTENDED">EXTENDED (Complet)</option>
           </select>
         </div>
-        @if (targetProfile() !== 'EXTENDED') {
-          <div class="ai-option-group">
-            <label>Options (Capabilities) :</label>
-            <div class="checkbox-group">
-              <label [style.opacity]="targetProfile() === 'EN16931' ? '0.5' : '1'">
-                <input
-                  type="checkbox"
-                  (change)="toggleCapability('vat_breakdown')"
-                  [checked]="hasCapability('vat_breakdown') || targetProfile() === 'EN16931'"
-                  [disabled]="targetProfile() === 'EN16931'"
-                />
-                Détail TVA
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  (change)="toggleCapability('bank_info')"
-                  [checked]="hasCapability('bank_info')"
-                />
-                Coordonnées bancaires
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  (change)="toggleCapability('payment_terms')"
-                  [checked]="hasCapability('payment_terms')"
-                />
-                Conditions paiement
-              </label>
-            </div>
-          </div>
-        }
+
       </div>
       <div class="ai-body">
         <textarea

@@ -15,7 +15,8 @@
           "type": "string"
         },
         "country": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
         }
       },
       "additionalProperties": false,
@@ -54,7 +55,23 @@
           "type": "number"
         },
         "vat_category_code": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "AE",
+            "E",
+            "G",
+            "K",
+            "L",
+            "M",
+            "O",
+            "S",
+            "Z"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": ["95", "100", "AJ", "ABL", "ABK", "DL", "FC"],
+          "description": "Code motif UNTDID 7161 (ex: 95=Remise, ABL=Livraison, ABK=Emballage)"
         }
       },
       "additionalProperties": false,
@@ -117,6 +134,10 @@
     },
     "Details": {
       "properties": {
+        "business_process": {
+          "type": "string",
+          "default": "A1"
+        },
         "number": {
           "type": "string"
         },
@@ -129,11 +150,15 @@
           "format": "date-time"
         },
         "currency": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
         },
         "type": {
-          "type": "string"
+          "type": "string",
+          "enum": ["380", "381", "383", "384", "389", "751"],
+          "description": "Code type de document UNTDID 1001 (ex: 380=Facture, 381=Avoir, 384=Rectificative)"
         },
+
         "note": {
           "type": "string"
         },
@@ -190,7 +215,8 @@
           "type": "string"
         },
         "type_code": {
-          "type": "string"
+          "type": "string",
+          "description": "Code type de document référencé UNTDID 1001 (ex: 130=Commande, 50=Bon de livraison)"
         },
         "issue_date": {
           "type": "string",
@@ -215,7 +241,15 @@
     "GlobalID": {
       "properties": {
         "scheme_id": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "0002",
+            "0009",
+            "0060",
+            "0088",
+            "0199",
+            "0225"
+          ]
         },
         "value": {
           "type": "string"
@@ -234,7 +268,11 @@
           "type": "string"
         },
         "profile": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "EN16931",
+            "EXTENDED"
+          ]
         },
         "invoice": {
           "$ref": "#/$defs/Details"
@@ -300,16 +338,23 @@
           "type": "string"
         },
         "quantity": {
-          "type": "number"
+          "type": "number",
+          "not": {
+            "const": 0
+          }
         },
         "unit": {
-          "type": "string"
+          "type": "string",
+          "enum": ["C62", "H87", "HUR", "DAY", "MON", "KGM", "LTR", "MTQ", "EA", "SET", "MTR", "CMT", "MMT", "KMT", "GRM", "TNE", "LBR", "ONZ"],
+          "description": "Code unité UN/ECE Rec 20 (ex: H87=Pièce, C62=Unité, HUR=Heure, DAY=Jour, KGM=Kilogramme)"
         },
         "unit_price": {
           "type": "number"
         },
         "vat_rate": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
         },
         "vat_amount": {
           "type": "number"
@@ -379,7 +424,8 @@
           "type": "string"
         },
         "vat_id": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[A-Za-z]{2}[A-Za-z0-9]+$"
         },
         "contact": {
           "$ref": "#/$defs/Contact"
@@ -398,15 +444,13 @@
       "type": "object",
       "required": [
         "name",
-        "address"
+        "address",
+        "global_id"
       ]
     },
     "Payment": {
       "properties": {
         "terms": {
-          "type": "string"
-        },
-        "method": {
           "type": "string"
         },
         "iban": {
@@ -432,7 +476,21 @@
     "PaymentMeans": {
       "properties": {
         "type_code": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "1",
+            "10",
+            "20",
+            "30",
+            "42",
+            "48",
+            "49",
+            "57",
+            "58",
+            "59",
+            "97"
+          ],
+          "description": "Moyen de paiement UNTDID 4461 (ex: 30=Virement, 58=SEPA, 48=Carte, 1=Espèces)"
         },
         "information": {
           "type": "string"
@@ -499,7 +557,9 @@
     "VatBreakdown": {
       "properties": {
         "rate": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
         },
         "taxable_amount": {
           "type": "number"
