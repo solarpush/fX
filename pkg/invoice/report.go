@@ -423,6 +423,20 @@ func validatePaymentReport(inv *Invoice, r *Report) {
 			r.errorf("payment.payment_means.type_code", CodeInvalidEnum, pm.TypeCode, allowedValues(PaymentMeansCodes),
 				"unknown payment means type code (BT-81) %q", pm.TypeCode)
 		}
+
+		if pm.TypeCode == PaymentMeansTransfer || pm.TypeCode == PaymentMeansSEPA {
+			hasIBAN := false
+			if pm.PayeeAccount != nil && pm.PayeeAccount.IBAN != "" {
+				hasIBAN = true
+			} else if inv.Seller.Bank != nil && inv.Seller.Bank.IBAN != "" {
+				hasIBAN = true
+			}
+			
+			if !hasIBAN {
+				r.errorf("seller.bank.iban", CodeRequired, nil, nil,
+					"BR-50: Un compte bancaire (IBAN) est obligatoire pour les paiements par virement (code %s)", pm.TypeCode)
+			}
+		}
 	}
 }
 

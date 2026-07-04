@@ -288,7 +288,7 @@ func TestGenerate_Phase4Features(t *testing.T) {
 func TestGenerate_Phase5DocumentTypes(t *testing.T) {
 	testCases := []struct {
 		name     string
-		docType  string
+		docType  invoice.DocumentTypeCode
 		typeName string
 	}{
 		{"Invoice", invoice.TypeInvoice, "Invoice"},

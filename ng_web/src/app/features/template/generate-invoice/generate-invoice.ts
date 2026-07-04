@@ -26,6 +26,7 @@ export class GenerateInvoice implements OnInit {
   protected invoiceForm!: FormGroup;
   protected isGenerating = signal<boolean>(false);
   protected error = signal<string | null>(null);
+  protected validationErrors = signal<string[]>([]);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -116,7 +117,7 @@ export class GenerateInvoice implements OnInit {
       lines: this.fb.array([this.createLine()]),
       payment: this.fb.group({
         terms: ['', requirePaymentTerms ? [Validators.required] : []],
-        method: ['Virement'],
+        type_code: ['30'],
         due_date: [''],
       }),
     });
@@ -142,6 +143,7 @@ export class GenerateInvoice implements OnInit {
       description: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(0.01)]],
       unit_price: [0, [Validators.required, Validators.min(0)]],
+      unit: ['EA', Validators.required],
       vat_rate: [20, Validators.required],
     });
   }
@@ -191,7 +193,7 @@ export class GenerateInvoice implements OnInit {
       payment: this.invoiceForm.get('payment')
         ? {
             terms: 'Paiement à 30 jours fin de mois',
-            method: 'Virement',
+            type_code: '30',
             due_date: new Date(new Date().setMonth(new Date().getMonth() + 1))
               .toISOString()
               .split('T')[0],
@@ -206,6 +208,7 @@ export class GenerateInvoice implements OnInit {
     line1.patchValue({
       description: 'Développement Backend Go',
       quantity: 10,
+      unit: 'HUR',
       unit_price: 500,
       vat_rate: 20,
     });
@@ -215,6 +218,7 @@ export class GenerateInvoice implements OnInit {
     line2.patchValue({
       description: 'Développement Frontend Angular',
       quantity: 8,
+      unit: 'DAY',
       unit_price: 450,
       vat_rate: 20,
     });
@@ -290,7 +294,7 @@ export class GenerateInvoice implements OnInit {
             quantity: qty,
             unit_price: price,
             vat_rate: rate,
-            unit: 'EA',
+            unit: l.unit || 'EA',
             vat_amount: vatAmt,
             total_excl_vat: totalExcl,
             total_incl_vat: totalExcl + vatAmt,
@@ -311,6 +315,7 @@ export class GenerateInvoice implements OnInit {
       payment: formValue.payment
         ? {
             ...formValue.payment,
+            payment_means: formValue.payment.type_code ? { type_code: formValue.payment.type_code } : undefined,
             due_date: formValue.payment.due_date
               ? new Date(formValue.payment.due_date).toISOString()
               : undefined,
@@ -337,8 +342,15 @@ export class GenerateInvoice implements OnInit {
         },
         error: (err) => {
           this.isGenerating.set(false);
-          const backendMsg = err?.error?.error || err?.message || 'Erreur inconnue';
-          this.error.set('Erreur lors de la génération. Le serveur a répondu : ' + backendMsg);
+          this.validationErrors.set([]);
+          
+          if (err?.error?.data?.errors && Array.isArray(err.error.data.errors)) {
+            this.error.set('La facture contient des erreurs de validation :');
+            this.validationErrors.set(err.error.data.errors);
+          } else {
+            const backendMsg = err?.error?.error || err?.message || 'Erreur inconnue';
+            this.error.set('Erreur lors de la génération. Le serveur a répondu : ' + backendMsg);
+          }
         },
       });
   }

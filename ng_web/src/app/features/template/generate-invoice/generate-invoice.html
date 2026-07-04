@@ -6,7 +6,16 @@
   </header>
 
   @if (error()) {
-    <div class="error-banner">{{ error() }}</div>
+    <div class="error-banner">
+      {{ error() }}
+      @if (validationErrors().length > 0) {
+        <ul style="margin-top: 0.5rem; margin-bottom: 0; padding-left: 1.5rem;">
+          @for (err of validationErrors(); track err) {
+            <li>{{ err }}</li>
+          }
+        </ul>
+      }
+    </div>
   }
 
   @if (invoiceForm) {
@@ -337,6 +346,7 @@
           <div class="line-row line-headers">
             <div class="form-group desc-group"><label>Description *</label></div>
             <div class="form-group sm"><label>Qté *</label></div>
+            <div class="form-group sm"><label>Unité *</label></div>
             <div class="form-group sm"><label>Prix U. *</label></div>
             <div class="form-group sm"><label>TVA % *</label></div>
             <div class="btn-icon" style="visibility: hidden">
@@ -362,6 +372,21 @@
                   placeholder="1"
                   [class.invalid]="line.get('quantity')?.invalid && line.get('quantity')?.touched"
                 />
+              </div>
+              <div class="form-group sm">
+                <select
+                  formControlName="unit"
+                  style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px"
+                  [class.invalid]="line.get('unit')?.invalid && line.get('unit')?.touched"
+                >
+                  <option value="C62">Unité (C62)</option>
+                  <option value="EA">Pièce (EA)</option>
+                  <option value="HUR">Heure (HUR)</option>
+                  <option value="DAY">Jour (DAY)</option>
+                  <option value="MON">Mois (MON)</option>
+                  <option value="KGM">Kg (KGM)</option>
+                  <option value="LTR">Litre (LTR)</option>
+                </select>
               </div>
               <div class="form-group sm">
                 <input
@@ -424,6 +449,21 @@
             <div class="form-group">
               <label>Date d'échéance</label>
               <input type="date" formControlName="due_date" />
+            </div>
+            <div class="form-group">
+              <label>Moyen de paiement</label>
+              <select
+                formControlName="type_code"
+                style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 4px"
+              >
+                <option value="1">Espèces (1)</option>
+                <option value="20">Chèque (20)</option>
+                <option value="30">Virement bancaire (30)</option>
+                <option value="48">Carte bancaire (48)</option>
+                <option value="49">Prélèvement automatique (49)</option>
+                <option value="58">Prélèvement SEPA (58)</option>
+                <option value="97">Compensation (97)</option>
+              </select>
             </div>
           </div>
         </section>
