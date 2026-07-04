@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0](https://github.com/solarpush/fX/compare/v1.3.0...v1.4.0) (2026-07-04)
+
+
+### Features
+
+* **api:** ✨ Add invoice schema endpoint and template rules handling ([e99729b](https://github.com/solarpush/fX/commit/e99729b8599ad7283788964d667a81a48dd5f4ac))
+* **invoice:** ✨ Enhance invoice generation with validation error display and payment means selection ([681ee5f](https://github.com/solarpush/fX/commit/681ee5fd9d60fa3fa310eedabe0f47ddedbfd75f))
+* **schema:** ✨ Enhance invoice schema with additional fields and validation ([d16e680](https://github.com/solarpush/fX/commit/d16e6800e1e07c2a22d8dd0ce7ec337037527f04))
+
 ## [1.3.0](https://github.com/solarpush/fX/compare/v1.2.0...v1.3.0) (2026-07-03)
 
 
