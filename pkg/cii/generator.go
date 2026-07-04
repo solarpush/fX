@@ -484,7 +484,7 @@ func toCII(inv *invoice.Invoice) *CrossIndustryInvoice {
 		},
 		ExchangedDocument: ExchangedDocument{
 			ID:       ID{Value: inv.Invoice.Number},
-			TypeCode: TypeCode{Value: inv.Invoice.Type},
+			TypeCode: TypeCode{Value: string(inv.Invoice.Type)},
 			IssueDateTime: IssueDateTime{
 				DateTimeString: DateTimeString{
 					Format: "102",
@@ -729,7 +729,7 @@ func toLineItem(line *invoice.Line, currency string) SupplyChainTradeLineItem {
 		},
 		SpecifiedLineTradeDelivery: SpecifiedLineTradeDelivery{
 			BilledQuantity: Quantity{
-				UnitCode: unit,
+				UnitCode: string(unit),
 				Value:    line.Quantity,
 			},
 		},
@@ -916,7 +916,7 @@ func toAllowanceCharge(ac *invoice.AllowanceCharge, currency string) SpecifiedTr
 	}
 
 	if ac.ReasonCode != "" {
-		result.ReasonCode = &ReasonCode{Value: ac.ReasonCode}
+		result.ReasonCode = &ReasonCode{Value: string(ac.ReasonCode)}
 	}
 
 	if ac.BaseAmount > 0 {
@@ -956,7 +956,7 @@ func toLineAllowanceCharge(ac *invoice.AllowanceCharge, currency string) Specifi
 	}
 
 	if ac.ReasonCode != "" {
-		result.ReasonCode = &ReasonCode{Value: ac.ReasonCode}
+		result.ReasonCode = &ReasonCode{Value: string(ac.ReasonCode)}
 	}
 
 	if ac.BaseAmount > 0 {
@@ -997,7 +997,7 @@ func toDocumentReference(ref *invoice.DocumentReference) AdditionalReferencedDoc
 
 func toPaymentMeans(pm *invoice.PaymentMeans, currency string) SpecifiedTradeSettlementPaymentMeans {
 	result := SpecifiedTradeSettlementPaymentMeans{
-		TypeCode: TypeCode{Value: pm.TypeCode},
+		TypeCode: TypeCode{Value: string(pm.TypeCode)},
 	}
 
 	if pm.Information != "" {

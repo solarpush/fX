@@ -81,6 +81,7 @@ RÈGLES CRITIQUES :
 
 8. NE GÉNÈRE JAMAIS le commentaire "// @profile:" en haut du fichier. L'interface s'en occupe automatiquement.
 9. Adapte la langue des libellés (ex: "Facture", "TVA", "SIRET") et le format (ex: dates, devises) à la langue et aux spécificités culturelles déduites de la demande de l'utilisateur.
+10. MAPPING DES CODES : Si une variable contient un code standard (ex: type_code de paiement, unité H87), N'ÉCRIS PAS une longue suite de conditions '#if code == "30" ... #else if ...' directement dans le rendu. Utilise toujours un dictionnaire Typst (#let dict = ("30": "Virement", "48": "Carte")) et la méthode '.at(clé, default: "Inconnu")' pour un code propre et lisible.
 
 EXEMPLE DE TABLEAU AVEC BOUCLE HANDLEBARS :
 #table(
@@ -241,11 +242,11 @@ RÈGLES CRITIQUES :
    N'utilise QUE des champs déclarés dans le schema.
 8. IMAGES : Typst n'accepte PAS de base64 dans #image(). Pour afficher une image fournie en base64 dans les
    données, utilise le helper spécial {{bytes chemin}} qui décode le base64 en octets Typst.
-   - Écris SANS guillemets : #image({{bytes logo}}, width: 4cm)
    - {{bytes chemin}} renvoie 'none' si la donnée est absente/invalide : protège l'affichage avec une condition Typst :
-     #let img = {{bytes logo}}
+     #let img = {{bytes chemin}}
      #if img != none { image(img, width: 4cm) } else { rect(width: 4cm, height: 3cm, fill: luma(230)) }
-9. POLICES : utilise UNIQUEMENT des familles réellement installées dans l'environnement (Linux/Alpine) :
+9. MAPPING DES CODES : Si une variable contient un code standard métier, N'ÉCRIS PAS une longue suite de conditions '#if code == "A" ... #else if ...' directement dans le rendu. Utilise toujours un dictionnaire Typst (#let dict = ("A": "Mot 1", "B": "Mot 2")) et la méthode '.at(clé, default: "Inconnu")' pour un code propre et lisible.
+10. POLICES : utilise UNIQUEMENT des familles réellement installées dans l'environnement (Linux/Alpine) :
    "Liberation Sans", "Liberation Serif", "Liberation Mono",
    "DejaVu Sans", "DejaVu Serif", "DejaVu Sans Mono",
    "Open Sans", "Noto Sans", "Noto Serif".

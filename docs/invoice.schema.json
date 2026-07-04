@@ -67,6 +67,11 @@
             "S",
             "Z"
           ]
+        },
+        "reason_code": {
+          "type": "string",
+          "enum": ["95", "100", "AJ", "ABL", "ABK", "DL", "FC"],
+          "description": "Code motif UNTDID 7161 (ex: 95=Remise, ABL=Livraison, ABK=Emballage)"
         }
       },
       "additionalProperties": false,
@@ -150,15 +155,10 @@
         },
         "type": {
           "type": "string",
-          "enum": [
-            "380",
-            "381",
-            "383",
-            "384",
-            "389",
-            "751"
-          ]
+          "enum": ["380", "381", "383", "384", "389", "751"],
+          "description": "Code type de document UNTDID 1001 (ex: 380=Facture, 381=Avoir, 384=Rectificative)"
         },
+
         "note": {
           "type": "string"
         },
@@ -215,7 +215,8 @@
           "type": "string"
         },
         "type_code": {
-          "type": "string"
+          "type": "string",
+          "description": "Code type de document référencé UNTDID 1001 (ex: 130=Commande, 50=Bon de livraison)"
         },
         "issue_date": {
           "type": "string",
@@ -343,7 +344,9 @@
           }
         },
         "unit": {
-          "type": "string"
+          "type": "string",
+          "enum": ["C62", "H87", "HUR", "DAY", "MON", "KGM", "LTR", "MTQ", "EA", "SET", "MTR", "CMT", "MMT", "KMT", "GRM", "TNE", "LBR", "ONZ"],
+          "description": "Code unité UN/ECE Rec 20 (ex: H87=Pièce, C62=Unité, HUR=Heure, DAY=Jour, KGM=Kilogramme)"
         },
         "unit_price": {
           "type": "number"
@@ -450,9 +453,6 @@
         "terms": {
           "type": "string"
         },
-        "method": {
-          "type": "string"
-        },
         "iban": {
           "type": "string"
         },
@@ -489,7 +489,8 @@
             "58",
             "59",
             "97"
-          ]
+          ],
+          "description": "Moyen de paiement UNTDID 4461 (ex: 30=Virement, 58=SEPA, 48=Carte, 1=Espèces)"
         },
         "information": {
           "type": "string"

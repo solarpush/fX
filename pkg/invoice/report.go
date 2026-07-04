@@ -308,6 +308,20 @@ func validateLinesReport(inv *Invoice, r *Report) {
 			r.errorf(field+".vat_rate", CodeInvalidValue, line.VatRate, nil, "line %d: VAT rate must be between 0 and 100", i+1)
 		}
 
+		if line.Unit != "" {
+			validUnits := []UnitCode{UnitOne, UnitPiece, UnitEach, UnitHour, UnitDay, UnitMonth, UnitKilogram, UnitLitre, UnitCubicMeter, UnitSet, UnitMeter, "CMT", "MMT", "KMT", "GRM", "TNE", "LBR", "ONZ"}
+			isValidUnit := false
+			for _, u := range validUnits {
+				if line.Unit == u {
+					isValidUnit = true
+					break
+				}
+			}
+			if !isValidUnit {
+				r.errorf(field+".unit", CodeInvalidValue, string(line.Unit), nil, "line %d: unit code must be a valid UN/ECE Rec 20 code (e.g. C62, H87, HUR, KGM)", i+1)
+			}
+		}
+
 		expectedTotal := line.Quantity * line.UnitPrice
 		if abs(line.TotalExclVat-expectedTotal) > 0.01 {
 			r.errorf(field+".total_excl_vat", CodeInconsistent,

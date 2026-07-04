@@ -380,7 +380,7 @@ func Parse(xmlData []byte) (*invoice.Invoice, error) {
 
 	// Parse invoice details
 	inv.Invoice.Number = doc.ExchangedDocument.ID.Value
-	inv.Invoice.Type = doc.ExchangedDocument.TypeCode.Value
+	inv.Invoice.Type = invoice.DocumentTypeCode(doc.ExchangedDocument.TypeCode.Value)
 	inv.Invoice.Currency = doc.SupplyChainTradeTransaction.ApplicableHeaderTradeSettlement.InvoiceCurrencyCode.Value
 
 	// Parse issue date
@@ -480,7 +480,7 @@ func Parse(xmlData []byte) (*invoice.Invoice, error) {
 			allowanceCharge.Reason = ac.Reason.Value
 		}
 		if ac.ReasonCode != nil {
-			allowanceCharge.ReasonCode = ac.ReasonCode.Value
+			allowanceCharge.ReasonCode = invoice.AllowanceChargeReasonCode(ac.ReasonCode.Value)
 		}
 		if ac.BasisAmount != nil {
 			allowanceCharge.BaseAmount = ac.BasisAmount.Value
@@ -501,7 +501,7 @@ func Parse(xmlData []byte) (*invoice.Invoice, error) {
 	if len(settlement.SpecifiedTradeSettlementPaymentMeans) > 0 {
 		pm := settlement.SpecifiedTradeSettlementPaymentMeans[0]
 		paymentMeans := &invoice.PaymentMeans{
-			TypeCode: pm.TypeCode.Value,
+			TypeCode: invoice.PaymentMeansCode(pm.TypeCode.Value),
 		}
 		if pm.Information != nil {
 			paymentMeans.Information = pm.Information.Value
@@ -583,7 +583,7 @@ func Parse(xmlData []byte) (*invoice.Invoice, error) {
 		// Quantity
 		qty := lineItem.SpecifiedLineTradeDelivery.BilledQuantity.Value
 		line.Quantity = qty
-		line.Unit = lineItem.SpecifiedLineTradeDelivery.BilledQuantity.UnitCode
+		line.Unit = invoice.UnitCode(lineItem.SpecifiedLineTradeDelivery.BilledQuantity.UnitCode)
 
 		// Prices
 		price := lineItem.SpecifiedLineTradeAgreement.NetPriceProductTradePrice.ChargeAmount.Value
@@ -597,14 +597,10 @@ func Parse(xmlData []byte) (*invoice.Invoice, error) {
 		// Parse line-level allowances/charges (Phase 4)
 		for _, ac := range lineSett.SpecifiedLineAllowanceCharge {
 			allowanceCharge := invoice.AllowanceCharge{
-				IsCharge: ac.ChargeIndicator.Indicator,
-				Amount:   ac.ActualAmount.Value,
-			}
-			if ac.Reason != nil {
-				allowanceCharge.Reason = ac.Reason.Value
-			}
-			if ac.ReasonCode != nil {
-				allowanceCharge.ReasonCode = ac.ReasonCode.Value
+				IsCharge:   ac.ChargeIndicator.Indicator,
+				Amount:     ac.ActualAmount.Value,
+				Reason:     ac.Reason.Value,
+				ReasonCode: invoice.AllowanceChargeReasonCode(ac.ReasonCode.Value),
 			}
 			if ac.BasisAmount != nil {
 				allowanceCharge.BaseAmount = ac.BasisAmount.Value

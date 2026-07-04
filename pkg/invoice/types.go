@@ -20,17 +20,17 @@ type Invoice struct {
 
 // Details contains invoice metadata
 type Details struct {
-	Number              string    `json:"number"`
-	IssueDate           time.Time `json:"issue_date"`
-	DueDate             time.Time `json:"due_date,omitempty"`
-	Currency            string    `json:"currency"`
-	Type                string    `json:"type"` // 380=Invoice, 381=Credit note, 384=Corrected, 389=Self-billed, 751=Information
-	Note                string    `json:"note,omitempty"`
-	BusinessProcess     string    `json:"business_process,omitempty"`      // BT-23 (ex: A1). Défaut: A1
-	BuyerReference      string    `json:"buyer_reference,omitempty"`       // Référence acheteur
-	PurchaseOrderRef    string    `json:"purchase_order_ref,omitempty"`    // Numéro de commande
-	ContractRef         string    `json:"contract_ref,omitempty"`          // Numéro de contrat
-	PrecedingInvoiceRef string    `json:"preceding_invoice_ref,omitempty"` // Facture précédente (avoirs/rectificatives)
+	Number              string           `json:"number"`
+	IssueDate           time.Time        `json:"issue_date"`
+	DueDate             time.Time        `json:"due_date,omitempty"`
+	Currency            string           `json:"currency"`
+	Type                DocumentTypeCode `json:"type"` // 380=Invoice, 381=Credit note, 384=Corrected, 389=Self-billed, 751=Information
+	Note                string           `json:"note,omitempty"`
+	BusinessProcess     string           `json:"business_process,omitempty"`      // BT-23 (ex: A1). Défaut: A1
+	BuyerReference      string           `json:"buyer_reference,omitempty"`       // Référence acheteur
+	PurchaseOrderRef    string           `json:"purchase_order_ref,omitempty"`    // Numéro de commande
+	ContractRef         string           `json:"contract_ref,omitempty"`          // Numéro de contrat
+	PrecedingInvoiceRef string           `json:"preceding_invoice_ref,omitempty"` // Facture précédente (avoirs/rectificatives)
 }
 
 // Party represents seller or buyer
@@ -77,7 +77,7 @@ type Line struct {
 	ID                 string            `json:"id"`
 	Description        string            `json:"description"`
 	Quantity           float64           `json:"quantity"`
-	Unit               string            `json:"unit,omitempty"`
+	Unit               UnitCode          `json:"unit,omitempty"`
 	UnitPrice          float64           `json:"unit_price"`
 	VatRate            float64           `json:"vat_rate"`
 	VatAmount          float64           `json:"vat_amount"`
@@ -115,7 +115,6 @@ type VatBreakdown struct {
 // Payment contains payment terms and information
 type Payment struct {
 	Terms         string        `json:"terms,omitempty"`
-	Method        string        `json:"method,omitempty"`
 	IBAN          string        `json:"iban,omitempty"`
 	DueDate       time.Time     `json:"due_date,omitempty"`       // Date d'échéance
 	PaymentMeans  *PaymentMeans `json:"payment_means,omitempty"`  // Moyen de paiement structuré
@@ -125,10 +124,10 @@ type Payment struct {
 
 // PaymentMeans represents structured payment method information
 type PaymentMeans struct {
-	TypeCode         string `json:"type_code"`                   // 30=virement, 58=SEPA, 48=carte, 1=espèces
-	Information      string `json:"information,omitempty"`       // Information textuelle
-	PayeeAccount     *Bank  `json:"payee_account,omitempty"`     // Compte bénéficiaire
-	PaymentReference string `json:"payment_reference,omitempty"` // Référence structurée
+	TypeCode         PaymentMeansCode `json:"type_code"`                   // 30=virement, 58=SEPA, 48=carte, 1=espèces
+	Information      string           `json:"information,omitempty"`       // Information textuelle
+	PayeeAccount     *Bank            `json:"payee_account,omitempty"`     // Compte bénéficiaire
+	PaymentReference string           `json:"payment_reference,omitempty"` // Référence structurée
 }
 
 // Discount represents early payment discount
@@ -142,15 +141,15 @@ type Discount struct {
 
 // AllowanceCharge represents charges (frais) or allowances (réductions)
 type AllowanceCharge struct {
-	IsCharge        bool    `json:"is_charge"`                   // true=charge (frais), false=allowance (réduction)
-	Reason          string  `json:"reason,omitempty"`            // Motif
-	ReasonCode      string  `json:"reason_code,omitempty"`       // Code motif (AA=publicité, ABL=livraison, etc.)
-	Amount          float64 `json:"amount"`                      // Montant
-	BaseAmount      float64 `json:"base_amount,omitempty"`       // Base de calcul
-	Percent         float64 `json:"percent,omitempty"`           // Pourcentage (si applicable)
-	VatRate         float64 `json:"vat_rate,omitempty"`          // Taux TVA applicable
-	VatAmount       float64 `json:"vat_amount,omitempty"`        // Montant TVA
-	VatCategoryCode string  `json:"vat_category_code,omitempty"` // Code catégorie TVA (S, Z, E, etc.)
+	IsCharge        bool                      `json:"is_charge"`                   // true=charge (frais), false=allowance (réduction)
+	Reason          string                    `json:"reason,omitempty"`            // Motif
+	ReasonCode      AllowanceChargeReasonCode `json:"reason_code,omitempty"`       // Code motif (AA=publicité, ABL=livraison, etc.)
+	Amount          float64                   `json:"amount"`                      // Montant
+	BaseAmount      float64                   `json:"base_amount,omitempty"`       // Base de calcul
+	Percent         float64                   `json:"percent,omitempty"`           // Pourcentage (si applicable)
+	VatRate         float64                   `json:"vat_rate,omitempty"`          // Taux TVA applicable
+	VatAmount       float64                   `json:"vat_amount,omitempty"`        // Montant TVA
+	VatCategoryCode string                    `json:"vat_category_code,omitempty"` // Code catégorie TVA (S, Z, E, etc.)
 }
 
 // BillingPeriod represents the invoicing period
@@ -176,33 +175,42 @@ type Note struct {
 	SubjectCode string `json:"subject_code,omitempty"` // AAI=info générale, REG=réglementaire, ABL=conditions
 }
 
+// DocumentTypeCode represents a UNTDID 1001 document type
+type DocumentTypeCode string
+
 // DocumentTypeCode constants
 const (
-	TypeInvoice            = "380" // Facture commerciale
-	TypeCreditNote         = "381" // Avoir
-	TypeDebitNote          = "383" // Note de débit
-	TypeCorrectedInvoice   = "384" // Facture rectificative
-	TypeSelfBilledInvoice  = "389" // Auto-facturation
-	TypeInformationInvoice = "751" // Facture d'information
+	TypeInvoice            DocumentTypeCode = "380" // Facture commerciale
+	TypeCreditNote         DocumentTypeCode = "381" // Avoir
+	TypeDebitNote          DocumentTypeCode = "383" // Note de débit
+	TypeCorrectedInvoice   DocumentTypeCode = "384" // Facture rectificative
+	TypeSelfBilledInvoice  DocumentTypeCode = "389" // Auto-facturation
+	TypeInformationInvoice DocumentTypeCode = "751" // Facture d'information
 )
+
+// PaymentMeansCode represents a UNTDID 4461 payment means code
+type PaymentMeansCode string
 
 // PaymentMeansCode constants
 const (
-	PaymentMeansCash        = "1"  // Espèces
-	PaymentMeansCheque      = "20" // Chèque
-	PaymentMeansTransfer    = "30" // Virement bancaire
-	PaymentMeansCard        = "48" // Carte de paiement
-	PaymentMeansSEPA        = "58" // Prélèvement SEPA
-	PaymentMeansDirectDebit = "49" // Prélèvement automatique
+	PaymentMeansCash        PaymentMeansCode = "1"  // Espèces
+	PaymentMeansCheque      PaymentMeansCode = "20" // Chèque
+	PaymentMeansTransfer    PaymentMeansCode = "30" // Virement bancaire
+	PaymentMeansCard        PaymentMeansCode = "48" // Carte de paiement
+	PaymentMeansSEPA        PaymentMeansCode = "58" // Prélèvement SEPA
+	PaymentMeansDirectDebit PaymentMeansCode = "49" // Prélèvement automatique
 )
+
+// AllowanceChargeReasonCode represents a UNTDID 7161 / 5189 reason code
+type AllowanceChargeReasonCode string
 
 // AllowanceChargeReasonCode constants
 const (
-	AllowanceDiscount       = "95"  // Remise commerciale
-	AllowanceBonusGoods     = "100" // Marchandises gratuites
-	AllowanceVolumeDiscount = "AJ"  // Remise quantité
-	ChargeDelivery          = "ABL" // Frais de livraison
-	ChargePackaging         = "ABK" // Frais d'emballage
-	ChargeInsurance         = "DL"  // Assurance
-	ChargeAdministration    = "FC"  // Frais administratifs
+	AllowanceDiscount       AllowanceChargeReasonCode = "95"  // Remise commerciale
+	AllowanceBonusGoods     AllowanceChargeReasonCode = "100" // Marchandises gratuites
+	AllowanceVolumeDiscount AllowanceChargeReasonCode = "AJ"  // Remise quantité
+	ChargeDelivery          AllowanceChargeReasonCode = "ABL" // Frais de livraison
+	ChargePackaging         AllowanceChargeReasonCode = "ABK" // Frais d'emballage
+	ChargeInsurance         AllowanceChargeReasonCode = "DL"  // Assurance
+	ChargeAdministration    AllowanceChargeReasonCode = "FC"  // Frais administratifs
 )

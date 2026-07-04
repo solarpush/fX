@@ -11,6 +11,24 @@ import (
 // Elles sont exposées dans les erreurs de l'API afin d'indiquer clairement au client
 // les valeurs possibles pour chaque champ.
 
+// UnitCode représente un code d'unité de mesure UN/ECE Rec 20
+type UnitCode string
+
+// Principaux codes d'unité de mesure
+const (
+	UnitPiece      UnitCode = "H87"
+	UnitOne        UnitCode = "C62"
+	UnitEach       UnitCode = "EA"
+	UnitHour       UnitCode = "HUR"
+	UnitDay        UnitCode = "DAY"
+	UnitMonth      UnitCode = "MON"
+	UnitKilogram   UnitCode = "KGM"
+	UnitLitre      UnitCode = "LTR"
+	UnitCubicMeter UnitCode = "MTQ"
+	UnitSet        UnitCode = "SET"
+	UnitMeter      UnitCode = "MTR"
+)
+
 // GlobalIDSchemes liste les schémas d'identifiant normalisé (ISO 6523 ICD) acceptés
 // pour Seller/Buyer GlobalID (BT-29/BT-46) et l'adresse électronique (BT-34/BT-49).
 // La clé est le code schemeID, la valeur une description lisible.
@@ -33,7 +51,7 @@ var numericSchemeLengths = map[string]int{
 }
 
 // DocumentTypeCodes liste les codes de type de document (BT-3) supportés.
-var DocumentTypeCodes = map[string]string{
+var DocumentTypeCodes = map[DocumentTypeCode]string{
 	TypeInvoice:            "Facture commerciale",
 	TypeCreditNote:         "Avoir",
 	TypeDebitNote:          "Note de débit",
@@ -43,17 +61,17 @@ var DocumentTypeCodes = map[string]string{
 }
 
 // PaymentMeansCodes liste les codes de moyen de paiement (BT-81, UNCL4461) supportés.
-var PaymentMeansCodes = map[string]string{
-	"1":  "Espèces",
+var PaymentMeansCodes = map[PaymentMeansCode]string{
+	PaymentMeansCash:  "Espèces",
 	"10": "Espèces (en compte)",
-	"20": "Chèque",
-	"30": "Virement bancaire",
-	"42": "Paiement sur compte bancaire",
-	"48": "Carte de paiement",
-	"49": "Prélèvement automatique",
-	"57": "Ordre permanent",
-	"58": "Virement SEPA",
-	"59": "Prélèvement SEPA",
+	PaymentMeansCheque: "Chèque",
+	PaymentMeansTransfer: "Virement bancaire",
+	"42": "Virement bancaire (compte de dépôt)",
+	PaymentMeansCard: "Carte de paiement",
+	PaymentMeansDirectDebit: "Prélèvement automatique",
+	"57": "Accord de prélèvement préétabli",
+	PaymentMeansSEPA: "Prélèvement SEPA",
+	"59": "Prélèvement bancaire au profit du débiteur",
 	"97": "Compensation entre parties",
 }
 
@@ -93,15 +111,15 @@ var NoteSubjectCodes = map[string]string{
 
 // allowedValues retourne les clés d'une map d'enum, triées, avec leur description
 // (ex: "0009 (SIRET (France))") pour être exposées dans les messages d'erreur API.
-func allowedValues(enum map[string]string) []string {
+func allowedValues[K ~string](enum map[K]string) []string {
 	keys := make([]string, 0, len(enum))
 	for k := range enum {
-		keys = append(keys, k)
+		keys = append(keys, string(k))
 	}
 	sort.Strings(keys)
 	out := make([]string, 0, len(keys))
 	for _, k := range keys {
-		out = append(out, k+" ("+enum[k]+")")
+		out = append(out, k+" ("+enum[K(k)]+")")
 	}
 	return out
 }
