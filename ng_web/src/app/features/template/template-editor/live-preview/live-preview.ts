@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, input, signal } from '@angular/core';
+import { Component, OnDestroy, effect, inject, input, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
@@ -8,21 +8,42 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   templateUrl: './live-preview.html',
   styleUrl: './live-preview.scss',
 })
-export class LivePreview {
+export class LivePreview implements OnDestroy {
+  private readonly sanitizer = inject(DomSanitizer);
+
   readonly previewBlob = input<Blob | null>(null);
   readonly isLoading = input(false);
 
   protected readonly previewUrl = signal<SafeResourceUrl | null>(null);
+  private activeObjectUrl: string | null = null;
 
-  constructor(private sanitizer: DomSanitizer) {
-    effect(() => {
+  constructor() {
+    effect((onCleanup) => {
       const blob = this.previewBlob();
+      this.revokeCurrentUrl();
+
       if (blob) {
         const url = URL.createObjectURL(blob);
+        this.activeObjectUrl = url;
         this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(url));
       } else {
         this.previewUrl.set(null);
       }
+
+      onCleanup(() => {
+        this.revokeCurrentUrl();
+      });
     });
+  }
+
+  ngOnDestroy(): void {
+    this.revokeCurrentUrl();
+  }
+
+  private revokeCurrentUrl(): void {
+    if (this.activeObjectUrl) {
+      URL.revokeObjectURL(this.activeObjectUrl);
+      this.activeObjectUrl = null;
+    }
   }
 }

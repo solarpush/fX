@@ -1,0 +1,148 @@
+<div class="editor-shell">
+  <!-- Top Editor Bar -->
+  <div class="editor-bar">
+    <div class="bar-left">
+      <span class="file-dot" [class.ro]="readonly()"></span>
+      <span class="file-name">{{ title() }}</span>
+      @if (readonly()) {
+        <span class="ro-pill">Lecture seule (compilé)</span>
+      } @else {
+        <span class="hint-pill">Ctrl+Espace · data. · fx- · {{ '{{' }}</span>
+      }
+    </div>
+    <div class="bar-right">
+      @if (errorCount() > 0) {
+        <button type="button" class="diag-pill err" (click)="showDiagnosticsPanel.set(!showDiagnosticsPanel())">
+          ● {{ errorCount() }} err
+        </button>
+      }
+      @if (warningCount() > 0) {
+        <button type="button" class="diag-pill warn" (click)="showDiagnosticsPanel.set(!showDiagnosticsPanel())">
+          ▲ {{ warningCount() }} warn
+        </button>
+      }
+      <span class="ln-pill">Ln {{ activeLine() }}</span>
+      <button type="button" class="copy-all-btn" (click)="copyAll()">
+        {{ copied() ? '✓ Copié' : 'Copier' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Code Viewport -->
+  <div class="editor-viewport">
+    <!-- Line Numbers + Diagnostic Gutter -->
+    <div class="gutter" #gutterEl>
+      @for (ln of linesArray(); track ln) {
+        <div
+          class="gutter-line"
+          [class.active]="activeLine() === ln"
+          [class.has-err]="lineSeverity(ln) === 'error'"
+          [class.has-warn]="lineSeverity(ln) === 'warning'"
+          [title]="lineTooltip(ln)"
+        >
+          @if (lineSeverity(ln) === 'error') {
+            <span class="g-mark err">●</span>
+          } @else if (lineSeverity(ln) === 'warning') {
+            <span class="g-mark warn">▲</span>
+          } @else {
+            <span class="g-mark"></span>
+          }
+          <span class="g-num">{{ ln }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Layered Editor Area -->
+    <div class="code-stage">
+      <!-- Diagnostic Line Highlight Backdrop -->
+      <div class="line-bg-layer" #lineBgEl aria-hidden="true">
+        @for (ln of linesArray(); track ln) {
+          <div
+            class="bg-line"
+            [class.active]="activeLine() === ln"
+            [class.err]="lineSeverity(ln) === 'error'"
+            [class.warn]="lineSeverity(ln) === 'warning'"
+          ></div>
+        }
+      </div>
+
+      <!-- Syntax Highlight Layer -->
+      <pre class="highlight-layer" #highlightEl aria-hidden="true"><code [innerHTML]="highlightedHtml()"></code></pre>
+
+      <!-- Interactive Textarea -->
+      <textarea
+        #textareaEl
+        class="code-textarea"
+        [value]="internalCode()"
+        [readOnly]="readonly()"
+        spellcheck="false"
+        autocapitalize="off"
+        autocomplete="off"
+        autocorrect="off"
+        (input)="onInput($event)"
+        (scroll)="onScroll($event)"
+        (keydown)="onKeyDown($event)"
+        (click)="onClickOrKeyup($event)"
+        (keyup)="onClickOrKeyup($event)"
+        (blur)="closeAutocomplete()"
+      ></textarea>
+
+      <!-- Autocomplete Dropdown -->
+      @if (acOpen() && acItems().length > 0) {
+        <div
+          class="ac-dropdown"
+          [style.top.px]="acPos().top"
+          [style.left.px]="acPos().left"
+          (mousedown)="$event.preventDefault()"
+        >
+          @for (item of acItems(); track item.label; let idx = $index) {
+            <button
+              type="button"
+              class="ac-item"
+              [class.selected]="acSelectedIdx() === idx"
+              (mouseenter)="acSelectedIdx.set(idx)"
+              (click)="acceptAutocomplete(item)"
+            >
+              <span class="ac-kind" [attr.data-kind]="item.kind">
+                {{ item.kind === 'component' ? 'UI' : item.kind === 'helper' ? 'fn' : '{}' }}
+              </span>
+              <span class="ac-main">
+                <span class="ac-label">{{ item.label }}</span>
+                <span class="ac-detail">{{ item.detail }}</span>
+              </span>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Structured Diagnostics Drawer -->
+  @if (diagnostics().length > 0 && showDiagnosticsPanel()) {
+    <div class="diag-panel">
+      <div class="diag-head">
+        <span>Diagnostics Typst ({{ diagnostics().length }})</span>
+        <button type="button" class="diag-close" (click)="showDiagnosticsPanel.set(false)">Masquer</button>
+      </div>
+      <div class="diag-list">
+        @for (d of diagnostics(); track $index) {
+          <button
+            type="button"
+            class="diag-row"
+            [class.warn]="d.severity === 'warning'"
+            (click)="jumpToLine(d.line)"
+          >
+            <span class="diag-badge">{{ d.severity === 'warning' ? '▲' : '●' }}</span>
+            <span class="diag-loc">
+              {{ d.file || 'main.typ' }}@if (d.line) {:{{ d.line }}@if (d.column) {:{{ d.column }}}}
+            </span>
+            <span class="diag-msg">{{ d.message }}</span>
+            @if (d.hints?.length) {
+              <span class="diag-hint">💡 {{ d.hints![0] }}</span>
+            }
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

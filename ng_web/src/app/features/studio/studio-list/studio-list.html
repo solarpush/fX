@@ -1,0 +1,220 @@
+<div class="studio-gallery">
+  <!-- Hero & Capabilities Bar -->
+  <header class="gallery-hero">
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        <span class="v2-pill">fX v2 Universal Document Engine</span>
+        @if (capabilities(); as cap) {
+          <span
+            class="cap-badge"
+            [class.rust]="isRustBackend()"
+            [class.unhealthy]="!cap.backend.healthy"
+            [title]="'Workers: ' + cap.backend.workers + ' · Rendus: ' + cap.backend.totalRenders"
+          >
+            <span class="status-dot"></span>
+            {{ isRustBackend() ? '⚡' : '⚙' }} {{ activeBackendLabel() }}
+            @if (cap.backend.avgDurationMs > 0) {
+              <span class="cap-ms">· {{ cap.backend.avgDurationMs | number: '1.0-0' }} ms moy.</span>
+            }
+          </span>
+        }
+      </div>
+      <h1>Studio Builder v2</h1>
+      <p>
+        Composez des factures Factur-X, gazettes éditoriales, rapports exécutifs ou attestations par blocs visuels, code Typst Pro et Co-pilote IA.
+      </p>
+    </div>
+
+    <div class="hero-right">
+      <a routerLink="/studio/new" [queryParams]="{ preset: 'blank' }" class="cta-primary">
+        + Nouveau document
+      </a>
+
+      @if (capabilities(); as cap) {
+        <div class="cap-strip">
+          @for (fmt of cap.formats; track fmt) {
+            <span class="fmt-pill">{{ fmt.toUpperCase() }}</span>
+          }
+          @for (mod of cap.modules; track mod.name) {
+            <span class="mod-pill" [title]="mod.description">{{ mod.name }}</span>
+          }
+        </div>
+      }
+    </div>
+  </header>
+
+  <!-- 1-Click Starter Presets -->
+  <section class="starters-section">
+    <div class="section-head">
+      <h2>Modèles de démarrage (1 clic)</h2>
+      <span class="sec-hint">Blueprints prêts à l’emploi avec JSON Schema & données réalistes</span>
+    </div>
+
+    <div class="starters-grid">
+      @for (card of starters; track card.id) {
+        <button type="button" class="starter-card" (click)="openStarter(card.id)">
+          <!-- Mini Paper Mockup -->
+          <div class="mini-paper" [style.background]="card.bg" [style.color]="card.text">
+            <div class="mp-accent" [style.background]="card.accent"></div>
+            @if (card.layoutStyle === 'invoice') {
+              <div class="mp-row space">
+                <span class="mp-bar w50" [style.background]="card.accent"></span>
+                <span class="mp-badge" [style.background]="card.accent">EN16931</span>
+              </div>
+              <div class="mp-cols">
+                <span class="mp-box"></span>
+                <span class="mp-box"></span>
+              </div>
+              <div class="mp-lines">
+                <span class="mp-line"></span>
+                <span class="mp-line"></span>
+                <span class="mp-line short"></span>
+              </div>
+            } @else if (card.layoutStyle === 'gazette') {
+              <div class="mp-center-title" [style.color]="card.accent">LA GAZETTE</div>
+              <div class="mp-rule" [style.background]="card.accent"></div>
+              <div class="mp-polaroids">
+                <span class="mp-pol"></span>
+                <span class="mp-pol"></span>
+                <span class="mp-pol"></span>
+              </div>
+            } @else if (card.layoutStyle === 'report') {
+              <div class="mp-kpis">
+                <span class="mp-kpi" [style.border-top-color]="card.accent"></span>
+                <span class="mp-kpi" [style.border-top-color]="card.accent"></span>
+                <span class="mp-kpi" [style.border-top-color]="card.accent"></span>
+              </div>
+              <div class="mp-bars">
+                <span class="mp-b w80" [style.background]="card.accent"></span>
+                <span class="mp-b w60" [style.background]="card.accent"></span>
+                <span class="mp-b w40" [style.background]="card.accent"></span>
+              </div>
+            } @else if (card.layoutStyle === 'cert') {
+              <div class="mp-center-title" [style.color]="card.accent">CERTIFICAT</div>
+              <div class="mp-cert-box" [style.border-left-color]="card.accent"></div>
+              <div class="mp-sigs">
+                <span></span>
+                <span></span>
+              </div>
+            } @else {
+              <div class="mp-blank-plus">+</div>
+            }
+          </div>
+
+          <div class="starter-body">
+            <div class="starter-top">
+              <strong>{{ card.name }}</strong>
+              <span class="cat-lbl">{{ card.category }}</span>
+            </div>
+            <p>{{ card.subtitle }}</p>
+            <div class="starter-tags">
+              @for (tag of card.tags; track tag) {
+                <span>{{ tag }}</span>
+              }
+            </div>
+          </div>
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- Unified Studio v2 + Legacy Templates Library -->
+  <section class="library-section">
+    <div class="lib-toolbar">
+      <div class="lib-title-row">
+        <h2>Vos templates</h2>
+        <span class="total-pill">{{ filteredTemplates().length }}</span>
+      </div>
+
+      <div class="lib-filters">
+        <div class="kind-tabs">
+          @for (tab of [
+            { id: 'all', label: 'Tous' },
+            { id: 'blueprint', label: 'Blueprint' },
+            { id: 'typst', label: 'Typst Pro' },
+            { id: 'facturx', label: 'Factur-X' },
+            { id: 'custom', label: 'Custom' },
+          ]; track tab.id) {
+            <button
+              type="button"
+              [class.active]="kindFilter() === tab.id"
+              (click)="kindFilter.set($any(tab.id))"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        <input
+          type="text"
+          class="lib-search"
+          placeholder="Rechercher un template…"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+      </div>
+    </div>
+
+    @if (loadError()) {
+      <div class="err-strip">
+        <span>{{ loadError() }}</span>
+        <button type="button" (click)="loadAll()">Réessayer</button>
+      </div>
+    }
+
+    @if (isLoading()) {
+      <div class="loading-grid">
+        @for (n of [1, 2, 3, 4]; track n) {
+          <div class="skeleton-card"></div>
+        }
+      </div>
+    } @else {
+      <div class="templates-grid">
+        @for (tpl of filteredTemplates(); track tpl.id) {
+          <article class="tpl-card" (click)="openTemplate(tpl.id)">
+            <div class="tpl-top">
+              <span class="kind-tag" [attr.data-kind]="tpl.kind">{{ kindLabel(tpl.kind) }}</span>
+              <span class="ver-tag">v{{ tpl.version }}</span>
+            </div>
+
+            <h3 class="tpl-name">{{ tpl.name }}</h3>
+            <p class="tpl-desc">{{ tpl.description || ('Identifiant : ' + tpl.id) }}</p>
+
+            @if (tpl.modules?.length) {
+              <div class="tpl-mods">
+                @for (m of tpl.modules!; track m) {
+                  <span>{{ m }}</span>
+                }
+              </div>
+            }
+
+            <div class="tpl-foot">
+              <span class="tpl-date">
+                {{ tpl.updatedAt ? (tpl.updatedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}
+              </span>
+
+              <div class="tpl-acts">
+                @if (confirmDeleteId() === tpl.id) {
+                  <button type="button" class="act-sm danger" [disabled]="deletingId() === tpl.id" (click)="confirmDelete(tpl.id, $event)">
+                    Confirmer
+                  </button>
+                  <button type="button" class="act-sm" (click)="cancelDelete($event)">Non</button>
+                } @else {
+                  <button type="button" class="act-sm" title="Dupliquer" (click)="duplicateTemplate(tpl, $event)">⧉</button>
+                  <button type="button" class="act-sm danger" title="Supprimer" (click)="requestDelete(tpl.id, $event)">🗑</button>
+                  <span class="open-pill">Ouvrir →</span>
+                }
+              </div>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty-library">
+            <div class="empty-ic">⊞</div>
+            <h3>Aucun template trouvé</h3>
+            <p>Sélectionnez un modèle de démarrage ci-dessus ou créez un document vierge pour commencer.</p>
+          </div>
+        }
+      </div>
+    }
+  </section>
+</div>

@@ -1,0 +1,185 @@
+<div class="outline-shell" (click)="onSelectRoot()">
+  <!-- Document Root Row -->
+  <button
+    type="button"
+    class="doc-root-row"
+    [class.selected]="selectedBlockId() === null"
+    (click)="onSelectRoot($event)"
+    title="Afficher les réglages Thème, Page et Modules du document"
+  >
+    <span class="doc-ic">✦</span>
+    <span class="doc-lbl">Document · Page &amp; Thème</span>
+    <span class="count-pill">{{ totalBlockCount() }}</span>
+  </button>
+
+  <!-- Hierarchical Drag-and-Drop Layers Tree -->
+  <div class="outline-scroll">
+    <div
+      class="drop-list root-list"
+      cdkDropList
+      [id]="dropListId(null)"
+      [cdkDropListData]="blueprint().blocks"
+      [cdkDropListConnectedTo]="allDropListIds()"
+      (cdkDropListDropped)="onDrop($event, null)"
+    >
+      @for (block of blueprint().blocks; track block.id) {
+        <ng-container
+          [ngTemplateOutlet]="layerNodeTpl"
+          [ngTemplateOutletContext]="{ $implicit: block, parentId: null }"
+        />
+      } @empty {
+        <div class="empty-outline">
+          Aucun bloc.<br />
+          Cliquez sur <strong>+ Ajouter un bloc</strong> ci-dessous.
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Sticky Footer: Quick Add Block -->
+  <div class="outline-foot" (click)="$event.stopPropagation()">
+    @if (quickAddTarget() === 'root') {
+      <div class="qa-popover">
+        <div class="qa-title">Ajouter un bloc au document</div>
+        <div class="qa-grid">
+          @for (bt of quickAddBlocks; track bt.type) {
+            <button type="button" class="qa-btn" (click)="pickQuickAdd(bt.type, 'root', $event)">
+              <span class="glyph" [attr.data-cat]="bt.category">{{ glyphFor(bt.type) }}</span>
+              <span>{{ bt.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+    <button type="button" class="add-root-btn" (click)="openQuickAdd('root', $event)">
+      + Ajouter un bloc
+    </button>
+  </div>
+</div>
+
+<!-- Recursive Compact Layer Node Template -->
+<ng-template #layerNodeTpl let-block let-parentId="parentId">
+  <div
+    class="layer-node"
+    [class.selected]="selectedBlockId() === block.id"
+    [class.container]="isContainer(block.type)"
+    cdkDrag
+    [cdkDragData]="{ kind: 'block', blockId: block.id, parentId: parentId }"
+  >
+    <div *cdkDragPlaceholder class="drag-slot"></div>
+    <div *cdkDragPreview class="drag-chip">
+      <span class="glyph" [attr.data-cat]="categoryFor(block.type)">{{ glyphFor(block.type) }}</span>
+      <span>{{ labelFor(block.type) }}</span>
+    </div>
+
+    <div class="node-row" (click)="onSelectBlock(block.id, $event)">
+      <span
+        class="drag-grip"
+        cdkDragHandle
+        title="Glisser pour réordonner ou imbriquer"
+        (click)="$event.stopPropagation()"
+      >
+        ⋮⋮
+      </span>
+
+      @if (isContainer(block.type)) {
+        <button
+          type="button"
+          class="caret-btn"
+          (click)="toggleCollapse(block.id, $event)"
+          [title]="isCollapsed(block.id) ? 'Déplier' : 'Replier'"
+        >
+          {{ isCollapsed(block.id) ? '▸' : '▾' }}
+        </button>
+      }
+
+      <span class="glyph" [attr.data-cat]="categoryFor(block.type)">
+        {{ glyphFor(block.type) }}
+      </span>
+
+      <div class="node-info">
+        <div class="node-top">
+          <span class="node-name">{{ labelFor(block.type) }}</span>
+          @if (block.visibleIf) {
+            <span class="tag-if" [title]="'Condition : ' + block.visibleIf">if</span>
+          }
+          @if (hasCustomStyle(block)) {
+            <span class="tag-st" title="Style personnalisé actif">✦</span>
+          }
+        </div>
+        <div class="node-sub">{{ summaryFor(block) }}</div>
+      </div>
+
+      <div class="row-ops">
+        @if (isContainer(block.type)) {
+          <button
+            type="button"
+            class="op-btn add"
+            title="Ajouter un enfant"
+            (click)="openQuickAdd(block.id, $event)"
+          >
+            +
+          </button>
+        }
+        <button
+          type="button"
+          class="op-btn"
+          title="Dupliquer"
+          (click)="onDuplicate(block.id, $event)"
+        >
+          ⧉
+        </button>
+        <button
+          type="button"
+          class="op-btn del"
+          title="Supprimer"
+          (click)="onDelete(block.id, $event)"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+
+    <!-- Inline Child Picker for Containers -->
+    @if (isContainer(block.type) && quickAddTarget() === block.id) {
+      <div class="qa-popover inline" (click)="$event.stopPropagation()">
+        <div class="qa-title">Insérer dans {{ labelFor(block.type) }}</div>
+        <div class="qa-grid">
+          @for (bt of quickAddBlocks; track bt.type) {
+            <button type="button" class="qa-btn" (click)="pickQuickAdd(bt.type, block.id, $event)">
+              <span class="glyph" [attr.data-cat]="bt.category">{{ glyphFor(bt.type) }}</span>
+              <span>{{ bt.label }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Nested Drop Zone for Container Children -->
+    @if (isContainer(block.type) && !isCollapsed(block.id)) {
+      <div
+        class="children-rail"
+        cdkDropList
+        [id]="dropListId(block.id)"
+        [cdkDropListData]="block.children ?? []"
+        [cdkDropListConnectedTo]="allDropListIds()"
+        (cdkDropListDropped)="onDrop($event, block.id)"
+      >
+        @for (child of block.children ?? []; track child.id) {
+          <ng-container
+            [ngTemplateOutlet]="layerNodeTpl"
+            [ngTemplateOutletContext]="{ $implicit: child, parentId: block.id }"
+          />
+        } @empty {
+          <button
+            type="button"
+            class="empty-child"
+            (click)="openQuickAdd(block.id, $event)"
+          >
+            + Déposer ou ajouter ici
+          </button>
+        }
+      </div>
+    }
+  </div>
+</ng-template>

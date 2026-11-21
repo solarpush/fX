@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 interface AppConfigResponse {
   allowCustomTemplates: boolean;
   webUiEnabled: boolean;
+  studioEnabled?: boolean;
 }
 
 interface ApiResponse<T> {
@@ -23,20 +24,24 @@ export class AppConfigService {
   private readonly http = inject(HttpClient);
 
   private readonly allowCustomTemplates = signal(false);
+  private readonly studioEnabledSignal = signal(true);
   private readonly loaded = signal(false);
 
   readonly allowCustom = this.allowCustomTemplates.asReadonly();
+  readonly studioEnabled = this.studioEnabledSignal.asReadonly();
   readonly isLoaded = this.loaded.asReadonly();
 
   load() {
     return this.http.get<ApiResponse<AppConfigResponse>>(`${environment.apiUrl}/config`).pipe(
       map((res) => {
         this.allowCustomTemplates.set(res.data?.allowCustomTemplates ?? false);
+        this.studioEnabledSignal.set(res.data?.studioEnabled ?? true);
         this.loaded.set(true);
         return true;
       }),
       catchError(() => {
         this.allowCustomTemplates.set(false);
+        this.studioEnabledSignal.set(true);
         this.loaded.set(true);
         return of(false);
       }),

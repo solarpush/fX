@@ -1,0 +1,1271 @@
+<aside class="inspector-shell">
+  @if (selectedBlock(); as blk) {
+    <!-- BLOCK INSPECTOR HEADER -->
+    <div class="insp-head">
+      <div class="head-left">
+        <span class="head-glyph">{{ blockGlyph(blk) }}</span>
+        <div class="head-titles">
+          <div class="insp-title">{{ blockLabel(blk) }}</div>
+          <div class="insp-id">
+            #{{ blk.id }}
+            @if (activeRepeatPath(); as rPath) {
+              <span class="scope-pill" title="Champs locaux de la boucle disponibles en priorité">
+                ↻ {{ rPath }}[]
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="insp-actions">
+        @if (parentBlock(); as parent) {
+          <button
+            type="button"
+            class="parent-btn"
+            [title]="'Remonter vers ' + blockLabel(parent)"
+            (click)="selectBlock.emit(parent.id)"
+          >
+            ↑ {{ blockLabel(parent) }}
+          </button>
+        }
+        <button type="button" class="ic-btn" title="Dupliquer" (click)="duplicateBlock.emit(blk.id)">⧉</button>
+        <button type="button" class="ic-btn danger" title="Supprimer" (click)="deleteBlock.emit(blk.id)">✕</button>
+      </div>
+    </div>
+
+    <!-- BLOCK TABS: Contenu | Style | Conditions -->
+    <div class="insp-tabs" role="tablist">
+      <button type="button" [class.active]="blockTab() === 'content'" (click)="blockTab.set('content')">
+        Contenu
+      </button>
+      <button type="button" [class.active]="blockTab() === 'style'" (click)="blockTab.set('style')">
+        Style
+        @if (selectedHasStyle()) {
+          <span class="tab-dot indigo"></span>
+        }
+      </button>
+      <button type="button" [class.active]="blockTab() === 'conditions'" (click)="blockTab.set('conditions')">
+        Conditions
+        @if (blk.visibleIf) {
+          <span class="tab-dot amber"></span>
+        }
+      </button>
+    </div>
+
+    <div class="insp-scroll">
+      <!-- ==================== TAB 1: CONTENU ==================== -->
+      @if (blockTab() === 'content') {
+        <!-- 1. HEADER -->
+        @if (blk.type === 'header') {
+          <div class="sec">
+            <div class="fld">
+              <span>Titre *</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('title')" (ngModelChange)="setProp('title', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('title', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Surtitre (Eyebrow)</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('eyebrow')" (ngModelChange)="setProp('eyebrow', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('eyebrow', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Sous-titre</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('subtitle')" (ngModelChange)="setProp('subtitle', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('subtitle', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Badge</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('badge')" (ngModelChange)="setProp('badge', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('badge', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Logo (chemin / binding)</span>
+              <div class="inp-row">
+                <input class="inp mono" [ngModel]="strProp('logo')" (ngModelChange)="setProp('logo', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('logo', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Alignement</span>
+              <div class="seg">
+                @for (m of ['split', 'left', 'center']; track m) {
+                  <button type="button" [class.active]="strProp('alignMode', 'split') === m" (click)="setProp('alignMode', m)">
+                    {{ m }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sec-head">
+              <span>Métadonnées ({{ kvListProp('meta').length }})</span>
+              <button type="button" class="add-link" (click)="addKvItem('meta')">+ Ajouter</button>
+            </div>
+            @for (item of kvListProp('meta'); track $index) {
+              <div class="sub-card">
+                <div class="sub-top">
+                  <input class="inp" placeholder="Libellé" [ngModel]="item.label" (ngModelChange)="updateKvItem('meta', $index, 'label', $event)" />
+                  <button type="button" class="del-row" (click)="removeKvItem('meta', $index)">×</button>
+                </div>
+                <div class="inp-row">
+                  <input class="inp mono" [placeholder]="'Valeur / {{binding}}'" [ngModel]="item.value" (ngModelChange)="updateKvItem('meta', $index, 'value', $event)" />
+                  <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToKv('meta', $index, $event)" />
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- 2. HEADING -->
+        @if (blk.type === 'heading') {
+          <div class="sec">
+            <div class="fld">
+              <span>Texte du titre *</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('text')" (ngModelChange)="setProp('text', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('text', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Niveau hiérarchique</span>
+              <div class="seg">
+                @for (lvl of [1, 2, 3]; track lvl) {
+                  <button type="button" [class.active]="numProp('level', 2) === lvl" (click)="setProp('level', lvl)">
+                    H{{ lvl }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="fld">
+              <span>Sous-titre optionnel</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('subtitle')" (ngModelChange)="setProp('subtitle', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('subtitle', $event)" />
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- 3. TEXT -->
+        @if (blk.type === 'text') {
+          <div class="sec">
+            <div class="fld">
+              <div class="fld-head">
+                <span>Contenu</span>
+                <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('content', $event)" />
+              </div>
+              <textarea
+                class="inp area"
+                rows="5"
+                [ngModel]="strProp('content') || strProp('text')"
+                (ngModelChange)="setProp('content', $event)"
+              ></textarea>
+            </div>
+
+            <div class="grid-2">
+              <label class="fld">
+                <span>Taille (ex: 10pt)</span>
+                <input class="inp" placeholder="auto" [ngModel]="strProp('size')" (ngModelChange)="setProp('size', $event)" />
+              </label>
+              <label class="fld">
+                <span>Alignement texte</span>
+                <select class="inp" [ngModel]="strProp('align', 'left')" (ngModelChange)="setProp('align', $event)">
+                  <option value="left">Gauche</option>
+                  <option value="center">Centré</option>
+                  <option value="right">Droite</option>
+                  <option value="justify">Justifié</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="toggle-pills">
+              <button type="button" [class.active]="boolProp('bold')" (click)="setProp('bold', !boolProp('bold'))">
+                <strong>B</strong> Gras
+              </button>
+              <button type="button" [class.active]="boolProp('italic')" (click)="setProp('italic', !boolProp('italic'))">
+                <em>I</em> Italique
+              </button>
+              <button type="button" [class.active]="boolProp('muted')" (click)="setProp('muted', !boolProp('muted'))">
+                Atténué
+              </button>
+            </div>
+          </div>
+        }
+
+        <!-- 4. COLUMNS -->
+        @if (blk.type === 'columns') {
+          <div class="sec">
+            <div class="fld">
+              <span>Proportions rapides (1 clic)</span>
+              <div class="chips-wrap">
+                @for (p of columnRatioPresets; track p.label) {
+                  <button
+                    type="button"
+                    class="chip"
+                    [class.active]="widthsProp().join('/') === p.widths.join('/')"
+                    (click)="applyWidthPreset(p.widths)"
+                  >
+                    {{ p.label }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <div class="sec-head">
+              <span>Largeurs ({{ widthsProp().length }} col. · {{ blk.children?.length ?? 0 }} bloc(s))</span>
+            </div>
+            @for (w of widthsProp(); track $index) {
+              <div class="track-row">
+                <span class="idx-tag">C{{ $index + 1 }}</span>
+                <input class="inp mono" [ngModel]="w" (ngModelChange)="updateWidthAt($index, $event)" />
+                <button type="button" class="del-row" (click)="removeWidthTrack($index)">×</button>
+              </div>
+            }
+
+            <button type="button" class="smart-btn" (click)="addColumnWithChild()">
+              + Ajouter une colonne (bloc prêt à éditer)
+            </button>
+
+            <label class="fld">
+              <span>Gouttière (gap)</span>
+              <input class="inp mono" [ngModel]="strProp('gap', '14pt')" (ngModelChange)="setProp('gap', $event)" />
+            </label>
+          </div>
+        }
+
+        <!-- 5. CARD -->
+        @if (blk.type === 'card') {
+          <div class="sec">
+            <div class="fld">
+              <span>Surtitre (Eyebrow)</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('eyebrow')" (ngModelChange)="setProp('eyebrow', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('eyebrow', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Titre de la carte</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('title')" (ngModelChange)="setProp('title', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('title', $event)" />
+              </div>
+            </div>
+            <label class="check-fld">
+              <input type="checkbox" [ngModel]="boolProp('accent')" (ngModelChange)="setProp('accent', $event)" />
+              <span>Bordure d’accentuation à gauche</span>
+            </label>
+          </div>
+        }
+
+        <!-- 6. KV GRID -->
+        @if (blk.type === 'kv_grid') {
+          <div class="sec">
+            <div class="fld">
+              <span>Colonnes</span>
+              <div class="seg">
+                @for (c of [1, 2, 3, 4]; track c) {
+                  <button type="button" [class.active]="numProp('columns', 2) === c" (click)="setProp('columns', c)">
+                    {{ c }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="sec-head">
+              <span>Paires Clé / Valeur ({{ kvListProp('items').length }})</span>
+              <button type="button" class="add-link" (click)="addKvItem('items')">+ Ajouter</button>
+            </div>
+            @for (item of kvListProp('items'); track $index) {
+              <div class="sub-card">
+                <div class="sub-top">
+                  <input class="inp" placeholder="Libellé" [ngModel]="item.label" (ngModelChange)="updateKvItem('items', $index, 'label', $event)" />
+                  <button type="button" class="del-row" (click)="removeKvItem('items', $index)">×</button>
+                </div>
+                <div class="inp-row">
+                  <input class="inp mono" [placeholder]="'Valeur / {{binding}}'" [ngModel]="item.value" (ngModelChange)="updateKvItem('items', $index, 'value', $event)" />
+                  <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToKv('items', $index, $event)" />
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- 7. TABLE -->
+        @if (blk.type === 'table') {
+          <div class="sec">
+            <label class="fld">
+              <span>Source tableau JSON (rowsPath)</span>
+              @if (arraySchemaPaths().length > 0) {
+                <select
+                  class="inp mono"
+                  [ngModel]="isKnownArrayPath(strProp('rowsPath')) ? strProp('rowsPath') : '__custom__'"
+                  (ngModelChange)="$event !== '__custom__' && onTableRowsPathSelected($event)"
+                >
+                  <option value="">— Données statiques —</option>
+                  @for (arr of arraySchemaPaths(); track arr.path) {
+                    <option [value]="arr.path">{{ arr.path }}[]</option>
+                  }
+                  @if (strProp('rowsPath') && !isKnownArrayPath(strProp('rowsPath'))) {
+                    <option value="__custom__">{{ strProp('rowsPath') }} (personnalisé)</option>
+                  }
+                </select>
+              }
+              <input
+                class="inp mono"
+                placeholder="ex: lines ou totals.vat_breakdown"
+                [ngModel]="strProp('rowsPath')"
+                (ngModelChange)="setProp('rowsPath', $event)"
+              />
+            </label>
+
+            @if (itemLeafNodesFor(strProp('rowsPath')).length > 0) {
+              <button type="button" class="smart-btn primary" (click)="autoGenerateTableColumns()">
+                ✦ Auto-générer les colonnes depuis le schéma
+              </button>
+            }
+
+            <label class="check-fld">
+              <input type="checkbox" [ngModel]="boolProp('striped', true)" (ngModelChange)="setProp('striped', $event)" />
+              <span>Zébrage alterné des lignes</span>
+            </label>
+          </div>
+
+          <div class="sec">
+            <div class="sec-head">
+              <span>Colonnes ({{ tableColsProp().length }})</span>
+              <button type="button" class="add-link" (click)="addTableCol()">+ Colonne</button>
+            </div>
+
+            @for (col of tableColsProp(); track $index) {
+              <div class="sub-card">
+                <div class="sub-top">
+                  <span class="idx-tag">Colonne {{ $index + 1 }}</span>
+                  <button type="button" class="del-row" (click)="removeTableCol($index)">×</button>
+                </div>
+                <div class="inp-row">
+                  <input class="inp" placeholder="En-tête" [ngModel]="col.header" (ngModelChange)="updateTableCol($index, 'header', $event)" />
+                  <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToTableHeader($index, $event)" />
+                </div>
+                <div class="inp-row">
+                  @if (itemSubFieldsFor(strProp('rowsPath')).length > 0) {
+                    <select
+                      class="inp mono"
+                      [ngModel]="col.field"
+                      (ngModelChange)="updateTableCol($index, 'field', $event)"
+                    >
+                      @if (!itemSubFieldsFor(strProp('rowsPath')).includes(col.field)) {
+                        <option [value]="col.field">{{ col.field || '— choisir un champ —' }}</option>
+                      }
+                      @for (sf of itemSubFieldsFor(strProp('rowsPath')); track sf) {
+                        <option [value]="sf">{{ sf }}</option>
+                      }
+                    </select>
+                  } @else {
+                    <input class="inp mono" placeholder="Champ (ex: description)" [ngModel]="col.field" (ngModelChange)="updateTableCol($index, 'field', $event)" />
+                  }
+                  <app-variable-picker
+                    [compact]="true"
+                    [schemaNodes]="schemaNodes()"
+                    [scopeArrayPath]="strProp('rowsPath') || null"
+                    [fieldOnly]="true"
+                    buttonTitle="Choisir un champ de la ligne"
+                    (picked)="updateTableCol($index, 'field', $event)"
+                  />
+                </div>
+                <div class="grid-2">
+                  <input class="inp mono" placeholder="1fr" [ngModel]="col.width" (ngModelChange)="updateTableCol($index, 'width', $event)" />
+                  <select class="inp" [ngModel]="col.align" (ngModelChange)="updateTableCol($index, 'align', $event)">
+                    <option value="left">Gauche</option>
+                    <option value="center">Centré</option>
+                    <option value="right">Droite</option>
+                  </select>
+                </div>
+                <select class="inp" [ngModel]="col.format" (ngModelChange)="updateTableCol($index, 'format', $event)">
+                  @for (fmt of tableFormats; track fmt.value) {
+                    <option [value]="fmt.value">{{ fmt.label }}</option>
+                  }
+                </select>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- 8. TOTALS -->
+        @if (blk.type === 'totals') {
+          <div class="sec">
+            <div class="sec-head">
+              <span>Lignes de détail ({{ totalsRowsProp().length }})</span>
+              <button type="button" class="add-link" (click)="addTotalsRow()">+ Ligne</button>
+            </div>
+            @for (row of totalsRowsProp(); track $index) {
+              <div class="sub-card">
+                <div class="sub-top">
+                  <input class="inp" placeholder="Libellé" [ngModel]="row.label" (ngModelChange)="updateTotalsRow($index, 'label', $event)" />
+                  <button type="button" class="del-row" (click)="removeTotalsRow($index)">×</button>
+                </div>
+                <div class="inp-row">
+                  <input class="inp mono" [placeholder]="'{{totals.total_vat | money:EUR}}'" [ngModel]="row.value" (ngModelChange)="updateTotalsRow($index, 'value', $event)" />
+                  <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToTotalsRow($index, 'value', $event)" />
+                </div>
+                <div class="inp-row">
+                  <input class="inp mono" placeholder="visibleIf (optionnel)" [ngModel]="row.visibleIf" (ngModelChange)="updateTotalsRow($index, 'visibleIf', $event)" />
+                  <app-variable-picker [compact]="true" [fieldOnly]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" buttonTitle="Champ conditionnel" (picked)="appendVariableToTotalsRow($index, 'visibleIf', $event)" />
+                </div>
+              </div>
+            }
+          </div>
+          <div class="sec">
+            <div class="fld">
+              <span>Libellé Grand Total</span>
+              <input class="inp" [ngModel]="strProp('grandLabel', 'Total')" (ngModelChange)="setProp('grandLabel', $event)" />
+            </div>
+            <div class="fld">
+              <span>Valeur Grand Total</span>
+              <div class="inp-row">
+                <input class="inp mono" [ngModel]="strProp('grandValue')" (ngModelChange)="setProp('grandValue', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('grandValue', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Pastille Highlight</span>
+              <input class="inp" placeholder="Net à payer" [ngModel]="strProp('highlightLabel')" (ngModelChange)="setProp('highlightLabel', $event)" />
+            </div>
+            <div class="fld">
+              <span>Valeur Highlight</span>
+              <div class="inp-row">
+                <input class="inp mono" [ngModel]="strProp('highlightValue')" (ngModelChange)="setProp('highlightValue', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('highlightValue', $event)" />
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- 9. KPI ROW -->
+        @if (blk.type === 'kpi_row') {
+          <div class="sec">
+            <div class="sec-head">
+              <span>Cartes KPI ({{ kpiItemsProp().length }})</span>
+              <button type="button" class="add-link" (click)="addKpiItem()">+ KPI</button>
+            </div>
+            @for (kpi of kpiItemsProp(); track $index) {
+              <div class="sub-card">
+                <div class="sub-top">
+                  <input class="inp" placeholder="Libellé" [ngModel]="kpi.label" (ngModelChange)="updateKpiItem($index, 'label', $event)" />
+                  <button type="button" class="del-row" (click)="removeKpiItem($index)">×</button>
+                </div>
+                <div class="inp-row">
+                  <input class="inp mono" placeholder="Valeur" [ngModel]="kpi.value" (ngModelChange)="updateKpiItem($index, 'value', $event)" />
+                  <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToKpi($index, 'value', $event)" />
+                </div>
+                <div class="inp-row">
+                  <input class="inp" placeholder="Delta (+12%)" [ngModel]="kpi.delta" (ngModelChange)="updateKpiItem($index, 'delta', $event)" />
+                  <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToKpi($index, 'delta', $event)" />
+                </div>
+                <select class="inp" [ngModel]="kpi.tone" (ngModelChange)="updateKpiItem($index, 'tone', $event)">
+                  <option value="primary">Primary</option>
+                  <option value="accent">Accent</option>
+                  <option value="success">Success</option>
+                  <option value="warning">Warning</option>
+                  <option value="danger">Danger</option>
+                </select>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- 10. CALLOUT -->
+        @if (blk.type === 'callout') {
+          <div class="sec">
+            <div class="fld">
+              <span>Titre</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('title')" (ngModelChange)="setProp('title', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('title', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Tonalité</span>
+              <div class="seg">
+                @for (t of ['info', 'success', 'warning', 'danger']; track t) {
+                  <button type="button" [class.active]="strProp('tone', 'info') === t" (click)="setProp('tone', t)">
+                    {{ t }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="fld">
+              <div class="fld-head">
+                <span>Contenu</span>
+                <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('content', $event)" />
+              </div>
+              <textarea class="inp area" rows="4" [ngModel]="strProp('content')" (ngModelChange)="setProp('content', $event)"></textarea>
+            </div>
+          </div>
+        }
+
+        <!-- 11. BADGE -->
+        @if (blk.type === 'badge') {
+          <div class="sec">
+            <div class="fld">
+              <span>Libellé *</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('label')" (ngModelChange)="setProp('label', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('label', $event)" />
+              </div>
+            </div>
+            <label class="fld">
+              <span>Tonalité</span>
+              <select class="inp" [ngModel]="strProp('tone', 'primary')" (ngModelChange)="setProp('tone', $event)">
+                <option value="primary">Primary</option>
+                <option value="accent">Accent</option>
+                <option value="success">Success</option>
+                <option value="warning">Warning</option>
+                <option value="danger">Danger</option>
+                <option value="muted">Muted</option>
+              </select>
+            </label>
+          </div>
+        }
+
+        <!-- 12. IMAGE -->
+        @if (blk.type === 'image') {
+          <div class="sec">
+            <div class="fld">
+              <span>Source (asset ou binding) *</span>
+              <div class="inp-row">
+                <input class="inp mono" [ngModel]="strProp('src')" (ngModelChange)="setProp('src', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('src', $event)" />
+              </div>
+            </div>
+            <div class="grid-2">
+              <label class="fld">
+                <span>Largeur</span>
+                <input class="inp" [ngModel]="strProp('width', '100%')" (ngModelChange)="setProp('width', $event)" />
+              </label>
+              <label class="fld">
+                <span>Hauteur</span>
+                <input class="inp" [ngModel]="strProp('height', 'auto')" (ngModelChange)="setProp('height', $event)" />
+              </label>
+            </div>
+            <div class="grid-2">
+              <label class="fld">
+                <span>Ajustement (fit)</span>
+                <select class="inp" [ngModel]="strProp('fit', 'cover')" (ngModelChange)="setProp('fit', $event)">
+                  <option value="cover">cover</option>
+                  <option value="contain">contain</option>
+                  <option value="stretch">stretch</option>
+                </select>
+              </label>
+              <label class="fld">
+                <span>Arrondi (radius)</span>
+                <input class="inp" [ngModel]="strProp('radius', '0pt')" (ngModelChange)="setProp('radius', $event)" />
+              </label>
+            </div>
+            <div class="fld">
+              <span>Légende</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('caption')" (ngModelChange)="setProp('caption', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('caption', $event)" />
+              </div>
+            </div>
+            <label class="fld">
+              <span>Texte placeholder fallback</span>
+              <input class="inp" [ngModel]="strProp('fallback', 'IMAGE')" (ngModelChange)="setProp('fallback', $event)" />
+            </label>
+          </div>
+        }
+
+        <!-- 13. GALLERY -->
+        @if (blk.type === 'gallery') {
+          <div class="sec">
+            <div class="fld">
+              <span>Style visuel de galerie</span>
+              <div class="seg">
+                @for (st of ['grid', 'polaroid', 'hero']; track st) {
+                  <button type="button" [class.active]="strProp('style', 'grid') === st" (click)="setProp('style', st)">
+                    {{ st === 'grid' ? 'Grille' : st === 'polaroid' ? 'Polaroid' : 'Hero' }}
+                  </button>
+                }
+              </div>
+              <div class="inp-row">
+                <input class="inp mono" [placeholder]="'ou binding {{style_image}}'" [ngModel]="strProp('style', 'grid')" (ngModelChange)="setProp('style', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="setProp('style', $event)" />
+              </div>
+            </div>
+
+            <label class="fld">
+              <span>Source tableau d’images (imagesPath)</span>
+              @if (arraySchemaPaths().length > 0) {
+                <select
+                  class="inp mono"
+                  [ngModel]="isKnownArrayPath(strProp('imagesPath')) ? strProp('imagesPath') : ''"
+                  (ngModelChange)="onGalleryPathChange($event)"
+                >
+                  <option value="">— Images statiques —</option>
+                  @for (arr of arraySchemaPaths(); track arr.path) {
+                    <option [value]="arr.path">{{ arr.path }}[]</option>
+                  }
+                </select>
+              }
+              <input class="inp mono" placeholder="ex: images" [ngModel]="strProp('imagesPath')" (ngModelChange)="onGalleryPathChange($event)" />
+            </label>
+
+            <div class="grid-2">
+              <label class="fld">
+                <span>Champ source</span>
+                @if (itemSubFieldsFor(strProp('imagesPath')).length > 0) {
+                  <select class="inp mono" [ngModel]="strProp('srcField', 'src')" (ngModelChange)="setProp('srcField', $event)">
+                    @if (!itemSubFieldsFor(strProp('imagesPath')).includes(strProp('srcField', 'src'))) {
+                      <option [value]="strProp('srcField', 'src')">{{ strProp('srcField', 'src') }}</option>
+                    }
+                    @for (sf of itemSubFieldsFor(strProp('imagesPath')); track sf) {
+                      <option [value]="sf">{{ sf }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input class="inp mono" [ngModel]="strProp('srcField', 'src')" (ngModelChange)="setProp('srcField', $event)" />
+                }
+              </label>
+              <label class="fld">
+                <span>Champ légende</span>
+                @if (itemSubFieldsFor(strProp('imagesPath')).length > 0) {
+                  <select class="inp mono" [ngModel]="strProp('captionField', 'alt_text')" (ngModelChange)="setProp('captionField', $event)">
+                    <option value="">(aucun)</option>
+                    @if (strProp('captionField') && !itemSubFieldsFor(strProp('imagesPath')).includes(strProp('captionField'))) {
+                      <option [value]="strProp('captionField')">{{ strProp('captionField') }}</option>
+                    }
+                    @for (sf of itemSubFieldsFor(strProp('imagesPath')); track sf) {
+                      <option [value]="sf">{{ sf }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input class="inp mono" [ngModel]="strProp('captionField', 'alt_text')" (ngModelChange)="setProp('captionField', $event)" />
+                }
+              </label>
+            </div>
+
+            <div class="fld">
+              <span>Colonnes (mode Grille)</span>
+              <div class="seg">
+                @for (c of [1, 2, 3, 4]; track c) {
+                  <button type="button" [class.active]="numProp('columns', 3) === c" (click)="setProp('columns', c)">
+                    {{ c }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- 14. CHART BAR -->
+        @if (blk.type === 'chart_bar') {
+          <div class="sec">
+            <div class="fld">
+              <span>Titre du graphique</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('title')" (ngModelChange)="setProp('title', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('title', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Unité (ex: k€, %)</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('unit')" (ngModelChange)="setProp('unit', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('unit', $event)" />
+              </div>
+            </div>
+            <label class="fld">
+              <span>Source tableau (itemsPath)</span>
+              @if (arraySchemaPaths().length > 0) {
+                <select
+                  class="inp mono"
+                  [ngModel]="isKnownArrayPath(strProp('itemsPath')) ? strProp('itemsPath') : ''"
+                  (ngModelChange)="onChartPathChange($event)"
+                >
+                  <option value="">— Données statiques —</option>
+                  @for (arr of arraySchemaPaths(); track arr.path) {
+                    <option [value]="arr.path">{{ arr.path }}[]</option>
+                  }
+                </select>
+              }
+              <input class="inp mono" placeholder="ex: segments" [ngModel]="strProp('itemsPath')" (ngModelChange)="onChartPathChange($event)" />
+            </label>
+            <div class="grid-2">
+              <label class="fld">
+                <span>Champ libellé</span>
+                @if (itemSubFieldsFor(strProp('itemsPath')).length > 0) {
+                  <select class="inp mono" [ngModel]="strProp('labelField', 'label')" (ngModelChange)="setProp('labelField', $event)">
+                    @if (!itemSubFieldsFor(strProp('itemsPath')).includes(strProp('labelField', 'label'))) {
+                      <option [value]="strProp('labelField', 'label')">{{ strProp('labelField', 'label') }}</option>
+                    }
+                    @for (sf of itemSubFieldsFor(strProp('itemsPath')); track sf) {
+                      <option [value]="sf">{{ sf }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input class="inp mono" [ngModel]="strProp('labelField', 'label')" (ngModelChange)="setProp('labelField', $event)" />
+                }
+              </label>
+              <label class="fld">
+                <span>Champ valeur</span>
+                @if (itemSubFieldsFor(strProp('itemsPath')).length > 0) {
+                  <select class="inp mono" [ngModel]="strProp('valueField', 'value')" (ngModelChange)="setProp('valueField', $event)">
+                    @if (!itemSubFieldsFor(strProp('itemsPath')).includes(strProp('valueField', 'value'))) {
+                      <option [value]="strProp('valueField', 'value')">{{ strProp('valueField', 'value') }}</option>
+                    }
+                    @for (sf of itemSubFieldsFor(strProp('itemsPath')); track sf) {
+                      <option [value]="sf">{{ sf }}</option>
+                    }
+                  </select>
+                } @else {
+                  <input class="inp mono" [ngModel]="strProp('valueField', 'value')" (ngModelChange)="setProp('valueField', $event)" />
+                }
+              </label>
+            </div>
+          </div>
+        }
+
+        <!-- 15. DIVIDER -->
+        @if (blk.type === 'divider') {
+          <div class="sec">
+            <div class="fld">
+              <span>Style du filet</span>
+              <div class="seg">
+                @for (st of ['solid', 'dashed', 'dotted', 'accent']; track st) {
+                  <button type="button" [class.active]="strProp('style', 'solid') === st" (click)="setProp('style', st)">
+                    {{ st }}
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- 16. SPACER -->
+        @if (blk.type === 'spacer') {
+          <div class="sec">
+            <label class="fld">
+              <span>Hauteur (Typst length)</span>
+              <input class="inp mono" [ngModel]="strProp('size', '12pt')" (ngModelChange)="setProp('size', $event)" />
+            </label>
+            <div class="chips-wrap">
+              @for (sz of ['6pt', '12pt', '18pt', '28pt', '1cm']; track sz) {
+                <button type="button" class="chip" [class.active]="strProp('size') === sz" (click)="setProp('size', sz)">{{ sz }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- 17. SIGNATURE -->
+        @if (blk.type === 'signature') {
+          <div class="sec">
+            <div class="fld">
+              <span>Nom / Rôle signataire</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('label', 'Signature')" (ngModelChange)="setProp('label', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('label', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Sous-titre</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('subtitle')" (ngModelChange)="setProp('subtitle', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('subtitle', $event)" />
+              </div>
+            </div>
+            <div class="fld">
+              <span>Lieu &amp; Date</span>
+              <div class="inp-row">
+                <input class="inp" [ngModel]="strProp('dateText')" (ngModelChange)="setProp('dateText', $event)" />
+                <app-variable-picker [schemaNodes]="schemaNodes()" [localRepeatPath]="activeRepeatPath()" (picked)="appendVariableToProp('dateText', $event)" />
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- 18. REPEAT -->
+        @if (blk.type === 'repeat') {
+          <div class="sec">
+            <label class="fld">
+              <span>Tableau à parcourir (path) *</span>
+              @if (arraySchemaPaths().length > 0) {
+                <select
+                  class="inp mono"
+                  [ngModel]="isKnownArrayPath(strProp('path')) ? strProp('path') : ''"
+                  (ngModelChange)="$event && setProp('path', $event)"
+                >
+                  <option value="">— Sélectionner un tableau du schéma —</option>
+                  @for (arr of arraySchemaPaths(); track arr.path) {
+                    <option [value]="arr.path">{{ arr.path }}[]</option>
+                  }
+                </select>
+              }
+              <input class="inp mono" placeholder="ex: articles" [ngModel]="strProp('path')" (ngModelChange)="setProp('path', $event)" />
+            </label>
+
+            @if (itemSubFieldsFor(strProp('path')).length > 0) {
+              <div class="info-note">
+                Champs locaux accessibles dans les blocs enfants :<br />
+                <code>{{ itemSubFieldsFor(strProp('path')).join(', ') }}</code>
+              </div>
+            }
+
+            <label class="fld">
+              <span>Espacement entre itérations</span>
+              <input class="inp mono" [ngModel]="strProp('gap', '10pt')" (ngModelChange)="setProp('gap', $event)" />
+            </label>
+            <label class="check-fld">
+              <input type="checkbox" [ngModel]="boolProp('divider')" (ngModelChange)="setProp('divider', $event)" />
+              <span>Insérer un séparateur entre chaque élément</span>
+            </label>
+          </div>
+        }
+
+        <!-- 19. PAGE BREAK -->
+        @if (blk.type === 'page_break') {
+          <div class="sec">
+            <div class="info-note">
+              Insère un saut de page faible (<code>#fx-page-break()</code>) afin de démarrer les blocs suivants sur une nouvelle feuille sans créer de page blanche inutile.
+            </div>
+          </div>
+        }
+
+        <!-- 20. CUSTOM TYPST -->
+        @if (blk.type === 'custom_typst') {
+          <div class="sec">
+            <label class="fld">
+              <span>Code Typst natif *</span>
+              <textarea
+                class="inp area mono"
+                rows="9"
+                spellcheck="false"
+                [ngModel]="strProp('code')"
+                (ngModelChange)="setProp('code', $event)"
+              ></textarea>
+            </label>
+            <div class="hint-sub">Accès direct à <code>data</code>, <code>theme</code> et tous les composants <code>fx-*</code>.</div>
+          </div>
+        }
+      }
+
+      <!-- ==================== TAB 2: STYLE (BlockStyle) ==================== -->
+      @if (blockTab() === 'style') {
+        <div class="sec">
+          <div class="sec-head"><span>Alignement &amp; Dimensions</span></div>
+          <div class="fld">
+            <span>Alignement du bloc</span>
+            <div class="seg">
+              @for (a of [{ id: 'left', lbl: 'Gauche' }, { id: 'center', lbl: 'Centre' }, { id: 'right', lbl: 'Droite' }]; track a.id) {
+                <button
+                  type="button"
+                  [class.active]="styleStr('align') === a.id"
+                  (click)="toggleAlign($any(a.id))"
+                >
+                  {{ a.lbl }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="fld">
+            <span>Largeur</span>
+            <div class="seg">
+              @for (w of widthPresets; track w) {
+                <button
+                  type="button"
+                  [class.active]="styleStr('width') === w"
+                  (click)="setStyleField('width', styleStr('width') === w ? '' : w)"
+                >
+                  {{ w === 'auto' ? 'Auto' : w }}
+                </button>
+              }
+            </div>
+            <input
+              class="inp mono"
+              placeholder="Personnalisée (ex: 80%, 12cm)"
+              [ngModel]="styleStr('width')"
+              (ngModelChange)="setStyleField('width', $event)"
+            />
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><span>Espacements</span></div>
+          @for (sp of [
+            { key: 'marginTop', label: 'Marge haut' },
+            { key: 'marginBottom', label: 'Marge bas' },
+            { key: 'padding', label: 'Padding interne' },
+          ]; track sp.key) {
+            <div class="fld">
+              <span>{{ sp.label }}</span>
+              <div class="space-row">
+                <div class="mini-presets">
+                  @for (p of spacingPresets; track p) {
+                    <button
+                      type="button"
+                      class="chip"
+                      [class.active]="styleStr($any(sp.key)) === p"
+                      (click)="setStyleField($any(sp.key), styleStr($any(sp.key)) === p ? '' : p)"
+                    >
+                      {{ p }}
+                    </button>
+                  }
+                </div>
+                <input
+                  class="inp mono sm"
+                  placeholder="auto"
+                  [ngModel]="styleStr($any(sp.key))"
+                  (ngModelChange)="setStyleField($any(sp.key), $event)"
+                />
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><span>Couleurs &amp; Arrondi</span></div>
+          @for (col of [
+            { key: 'bg', label: 'Fond', fallback: '#f8fafc' },
+            { key: 'color', label: 'Texte', fallback: '#0f172a' },
+            { key: 'border', label: 'Bordure', fallback: '#cbd5e1' },
+          ]; track col.key) {
+            <div class="color-row">
+              <span class="color-lbl">{{ col.label }}</span>
+              <input
+                type="color"
+                [ngModel]="styleStr($any(col.key)) || col.fallback"
+                (ngModelChange)="setStyleField($any(col.key), $event)"
+              />
+              <input
+                type="text"
+                class="inp mono"
+                placeholder="Hérité du thème"
+                [ngModel]="styleStr($any(col.key))"
+                (ngModelChange)="setStyleField($any(col.key), $event)"
+              />
+              <button
+                type="button"
+                class="del-row"
+                [disabled]="!styleStr($any(col.key))"
+                title="Réinitialiser cette couleur"
+                (click)="setStyleField($any(col.key), '')"
+              >
+                ×
+              </button>
+            </div>
+          }
+
+          <div class="fld">
+            <span>Rayon d’angle</span>
+            <div class="seg">
+              @for (r of radiusPresets; track r) {
+                <button
+                  type="button"
+                  [class.active]="styleStr('radius') === r"
+                  (click)="setStyleField('radius', styleStr('radius') === r ? '' : r)"
+                >
+                  {{ r }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="sec last">
+          <div class="sec-head"><span>Pagination</span></div>
+          <label class="check-fld">
+            <input
+              type="checkbox"
+              [ngModel]="styleBool('keepTogether')"
+              (ngModelChange)="setStyleField('keepTogether', $event)"
+            />
+            <span>Ne pas couper entre deux pages (keepTogether)</span>
+          </label>
+
+          @if (selectedHasStyle()) {
+            <button type="button" class="reset-style-btn" (click)="resetBlockStyle()">
+              ↺ Réinitialiser le style du bloc
+            </button>
+          }
+        </div>
+      }
+
+      <!-- ==================== TAB 3: CONDITIONS (VisibleIf) ==================== -->
+      @if (blockTab() === 'conditions') {
+        <div class="sec last">
+          <div class="sec-head"><span>Affichage conditionnel</span></div>
+          <app-condition-builder
+            [value]="blk.visibleIf || ''"
+            [schemaNodes]="schemaNodes()"
+            [localRepeatPath]="activeRepeatPath()"
+            (valueChange)="setVisibleIf($event)"
+          />
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- ==================== DOCUMENT ROOT INSPECTOR (Thème | Page | Modules) ==================== -->
+    <div class="insp-head">
+      <div class="head-left">
+        <span class="head-glyph">✦</span>
+        <div class="head-titles">
+          <div class="insp-title">Document &amp; Design System</div>
+          <div class="insp-id">Thème : {{ activeThemePreset().name }}</div>
+        </div>
+      </div>
+      @if (docTab() === 'theme' && hasOverrides()) {
+        <button type="button" class="add-link" (click)="resetThemeOverrides()">Réinitialiser</button>
+      }
+    </div>
+
+    <div class="insp-tabs" role="tablist">
+      <button type="button" [class.active]="docTab() === 'theme'" (click)="docTab.set('theme')">
+        Thème
+      </button>
+      <button type="button" [class.active]="docTab() === 'page'" (click)="docTab.set('page')">
+        Page
+      </button>
+      <button type="button" [class.active]="docTab() === 'modules'" (click)="docTab.set('modules')">
+        Modules
+        @if (activeModules().length > 0) {
+          <span class="tab-count">{{ activeModules().length }}</span>
+        }
+      </button>
+    </div>
+
+    <div class="insp-scroll">
+      <!-- DOC TAB 1: THÈME -->
+      @if (docTab() === 'theme') {
+        <div class="sec">
+          <div class="sec-head"><span>Presets de thème (@fx/ui)</span></div>
+          <div class="theme-list">
+            @for (t of effectiveThemes(); track t.id) {
+              <button
+                type="button"
+                class="theme-card"
+                [class.active]="(blueprint().theme.preset || 'swiss-minimal') === t.id"
+                (click)="selectThemePreset(t.id)"
+              >
+                <div class="swatches">
+                  <span [style.background]="t.bg" class="sw"></span>
+                  <span [style.background]="t.primary" class="sw"></span>
+                  <span [style.background]="t.accent" class="sw"></span>
+                </div>
+                <div class="theme-meta">
+                  <div class="theme-name">{{ t.name }}</div>
+                  <div class="theme-font">{{ t.fontHeading }} · {{ t.density }}</div>
+                </div>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><span>Tokens Couleurs (Overrides)</span></div>
+          <div class="color-grid">
+            @for (tok of [
+              { key: 'primary', label: 'Primary' },
+              { key: 'accent', label: 'Accent' },
+              { key: 'bg', label: 'Fond' },
+              { key: 'surface', label: 'Surface' },
+              { key: 'text', label: 'Texte' },
+              { key: 'border', label: 'Bordure' },
+            ]; track tok.key) {
+              <div class="color-item">
+                <span>{{ tok.label }}</span>
+                <div class="color-ctrl">
+                  <input
+                    type="color"
+                    [ngModel]="tokenValue($any(tok.key))"
+                    (ngModelChange)="setThemeToken($any(tok.key), $event)"
+                  />
+                  <input
+                    type="text"
+                    class="inp mono"
+                    [ngModel]="tokenValue($any(tok.key))"
+                    (ngModelChange)="setThemeToken($any(tok.key), $event)"
+                  />
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="sec last">
+          <div class="sec-head"><span>Typographie &amp; Rythme</span></div>
+          <label class="fld">
+            <span>Police Titres</span>
+            <select class="inp" [ngModel]="tokenValue('fontHeading')" (ngModelChange)="setThemeToken('fontHeading', $event)">
+              @for (f of effectiveFonts(); track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </label>
+          <label class="fld">
+            <span>Police Corps</span>
+            <select class="inp" [ngModel]="tokenValue('fontBody')" (ngModelChange)="setThemeToken('fontBody', $event)">
+              @for (f of effectiveFonts(); track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </label>
+          <div class="fld">
+            <span>Arrondis globaux</span>
+            <div class="seg">
+              @for (r of ['0pt', '2pt', '4pt', '8pt']; track r) {
+                <button type="button" [class.active]="tokenValue('radius') === r" (click)="setThemeToken('radius', r)">
+                  {{ r }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="fld">
+            <span>Densité</span>
+            <div class="seg">
+              @for (d of ['compact', 'comfortable', 'relaxed']; track d) {
+                <button type="button" [class.active]="tokenValue('density') === d" (click)="setThemeToken('density', d)">
+                  {{ d === 'compact' ? 'Compact' : d === 'comfortable' ? 'Normal' : 'Aéré' }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- DOC TAB 2: PAGE & RUNNING HEADER / FOOTER -->
+      @if (docTab() === 'page') {
+        <div class="sec">
+          <div class="sec-head"><span>Format &amp; Orientation</span></div>
+          <label class="fld">
+            <span>Papier</span>
+            <select class="inp" [ngModel]="blueprint().page.paper || 'a4'" (ngModelChange)="updatePage({ paper: $event })">
+              @for (p of paperSizes; track p.id) {
+                <option [value]="p.id">{{ p.label }} — {{ p.dimensions }}</option>
+              }
+            </select>
+          </label>
+          <div class="seg">
+            <button type="button" [class.active]="!blueprint().page.flipped" (click)="updatePage({ flipped: false })">
+              ▯ Portrait
+            </button>
+            <button type="button" [class.active]="!!blueprint().page.flipped" (click)="updatePage({ flipped: true })">
+              ▭ Paysage
+            </button>
+          </div>
+
+          <div class="sec-head sub"><span>Marges</span></div>
+          <div class="grid-2">
+            <label class="fld">
+              <span>Haut</span>
+              <input class="inp mono" [ngModel]="blueprint().page.margin?.top || '1.8cm'" (ngModelChange)="updateMargin('top', $event)" />
+            </label>
+            <label class="fld">
+              <span>Bas</span>
+              <input class="inp mono" [ngModel]="blueprint().page.margin?.bottom || '1.8cm'" (ngModelChange)="updateMargin('bottom', $event)" />
+            </label>
+            <label class="fld">
+              <span>Gauche</span>
+              <input class="inp mono" [ngModel]="blueprint().page.margin?.left || '1.8cm'" (ngModelChange)="updateMargin('left', $event)" />
+            </label>
+            <label class="fld">
+              <span>Droite</span>
+              <input class="inp mono" [ngModel]="blueprint().page.margin?.right || '1.8cm'" (ngModelChange)="updateMargin('right', $event)" />
+            </label>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><span>En-tête courant</span></div>
+          @for (side of [{ k: 'left', l: 'Gauche' }, { k: 'center', l: 'Centre' }, { k: 'right', l: 'Droite' }]; track side.k) {
+            <div class="inp-row">
+              <input
+                class="inp"
+                [placeholder]="side.l"
+                [ngModel]="$any(blueprint().header)?.[side.k] || ''"
+                (ngModelChange)="updateRunningChrome('header', $any(side.k), $event)"
+              />
+              <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" (picked)="appendVariableToChrome('header', $any(side.k), $event)" />
+            </div>
+          }
+        </div>
+
+        <div class="sec last">
+          <div class="sec-head"><span>Pied de page courant</span></div>
+          @for (side of [{ k: 'left', l: 'Gauche' }, { k: 'center', l: 'Centre' }, { k: 'right', l: 'Droite' }]; track side.k) {
+            <div class="inp-row">
+              <input
+                class="inp"
+                [placeholder]="side.l"
+                [ngModel]="$any(blueprint().footer)?.[side.k] || ''"
+                (ngModelChange)="updateRunningChrome('footer', $any(side.k), $event)"
+              />
+              <app-variable-picker [compact]="true" [schemaNodes]="schemaNodes()" (picked)="appendVariableToChrome('footer', $any(side.k), $event)" />
+            </div>
+          }
+          <label class="check-fld">
+            <input
+              type="checkbox"
+              [ngModel]="!!blueprint().footer?.showPageNumbers"
+              (ngModelChange)="updateRunningChrome('footer', 'showPageNumbers', $event)"
+            />
+            <span>Afficher la pagination (Page X / Y)</span>
+          </label>
+        </div>
+      }
+
+      <!-- DOC TAB 3: MODULES -->
+      @if (docTab() === 'modules') {
+        <div class="sec last">
+          <div class="sec-head"><span>Modules &amp; Conformité</span></div>
+          @for (mod of resolvedModules(); track mod.name) {
+            <div class="mod-card" [class.active]="isModuleActive(mod.name)">
+              <label class="check-fld">
+                <input
+                  type="checkbox"
+                  [checked]="isModuleActive(mod.name)"
+                  (change)="toggleModule(mod.name)"
+                />
+                <strong class="mod-name">{{ mod.name }}</strong>
+              </label>
+              <p class="mod-desc">{{ mod.description }}</p>
+
+              @if (isModuleActive(mod.name) && mod.name.toLowerCase() === 'facturx') {
+                <label class="fld mod-opt">
+                  <span>Profil Factur-X</span>
+                  <select
+                    class="inp"
+                    [ngModel]="getModuleOption('facturx', 'profile', 'EN16931')"
+                    (ngModelChange)="updateModuleOption('facturx', 'profile', $event)"
+                  >
+                    <option value="EN16931">EN16931 (Standard)</option>
+                    <option value="EXTENDED">EXTENDED</option>
+                    <option value="BASIC">BASIC</option>
+                    <option value="MINIMUM">MINIMUM</option>
+                  </select>
+                </label>
+              }
+
+              @if (isModuleActive(mod.name) && mod.name.toLowerCase() === 'watermark') {
+                <label class="fld mod-opt">
+                  <span>Texte filigrane</span>
+                  <input
+                    class="inp"
+                    [ngModel]="getModuleOption('watermark', 'text', 'CONFIDENTIEL')"
+                    (ngModelChange)="updateModuleOption('watermark', 'text', $event)"
+                  />
+                </label>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</aside>

@@ -1,0 +1,256 @@
+<aside class="palette-shell">
+  <!-- 3 Focused Sidebar Tabs -->
+  <div class="palette-tabs" role="tablist">
+    @if (workspaceMode() !== 'code') {
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'structure'"
+        (click)="setTab('structure')"
+        title="Arborescence hiérarchique des blocs (glisser-déposer)"
+      >
+        <span class="tab-ic">☰</span>
+        <span>Structure</span>
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'blocks'"
+        (click)="setTab('blocks')"
+        title="Catalogue des 20 blocs @fx/ui"
+      >
+        <span class="tab-ic">⊞</span>
+        <span>Blocs</span>
+      </button>
+    }
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="activeTab() === 'data'"
+      (click)="setTab('data')"
+      title="Schéma JSON & données de test"
+    >
+      <span class="tab-ic">&#123;&#125;</span>
+      <span>Données</span>
+    </button>
+  </div>
+
+  <!-- TAB 1: STRUCTURE (CALQUES) -->
+  @if (activeTab() === 'structure' && workspaceMode() !== 'code') {
+    <app-visual-canvas
+      [blueprint]="blueprint()"
+      [selectedBlockId]="selectedBlockId()"
+      [connectedDropLists]="connectedDropLists()"
+      (selectBlock)="selectBlock.emit($event)"
+      (addBlockAt)="addBlockAt.emit($event)"
+      (moveBlock)="moveBlock.emit($event)"
+      (duplicateBlock)="duplicateBlock.emit($event)"
+      (deleteBlock)="deleteBlock.emit($event)"
+      (nudgeBlock)="nudgeBlock.emit($event)"
+    />
+  }
+
+  <!-- TAB 2: BLOCS CATALOGUE -->
+  @if (activeTab() === 'blocks' && workspaceMode() !== 'code') {
+    <div class="tab-body">
+      <div class="search-wrap">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Rechercher un bloc @fx/ui…"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+        <div class="insert-hint">
+          <span class="dot"></span>
+          <span>Clic : {{ insertionHint() }}</span>
+        </div>
+      </div>
+
+      <div
+        class="blocks-scroll"
+        cdkDropList
+        id="fx-palette-list"
+        [cdkDropListSortingDisabled]="true"
+        [cdkDropListConnectedTo]="connectedDropLists()"
+      >
+        @for (group of groupedBlocks(); track group.id) {
+          <div class="block-group">
+            <div class="group-title">{{ group.label }}</div>
+            <div class="block-grid">
+              @for (bt of group.items; track bt.type) {
+                <button
+                  type="button"
+                  class="palette-item"
+                  cdkDrag
+                  [cdkDragData]="{ kind: 'palette', blockType: bt.type }"
+                  (click)="onAddBlockClick(bt.type)"
+                  [title]="bt.description + ' — Cliquer ou glisser sur la page'"
+                >
+                  <span class="item-glyph" [attr.data-cat]="bt.category">{{ blockGlyph(bt.type) }}</span>
+                  <span class="item-info">
+                    <span class="item-name">{{ bt.label }}</span>
+                    @if (bt.hasChildren) {
+                      <span class="item-tag">Conteneur</span>
+                    }
+                  </span>
+
+                  <div *cdkDragPreview class="drag-chip">
+                    <span class="item-glyph" [attr.data-cat]="bt.category">{{ blockGlyph(bt.type) }}</span>
+                    <span>{{ bt.label }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-msg">Aucun bloc pour « {{ searchQuery() }} ».</div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB 3: DONNÉES (SCHEMA TREE + QUICK TEST DATA) -->
+  @if (activeTab() === 'data') {
+    <div class="tab-body">
+      <div class="data-actions">
+        <button type="button" class="mini-btn primary" (click)="openInferDialog()">
+          ✦ Inférer JSON
+        </button>
+        <button type="button" class="mini-btn" (click)="openDataEditor.emit()" title="Ouvrir l’éditeur JSON / Schéma complet">
+          ✎ Éditer JSON
+        </button>
+      </div>
+
+      <div class="search-wrap">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Filtrer les champs du schéma…"
+          [ngModel]="schemaSearch()"
+          (ngModelChange)="schemaSearch.set($event)"
+        />
+      </div>
+
+      <div class="tree-scroll">
+        @for (item of flatSchemaNodes(); track item.node.path) {
+          <div
+            class="schema-row"
+            [style.padding-left.px]="6 + item.depth * 13"
+            (click)="onInsertPath(item.node.path)"
+            [title]="(item.node.description ? item.node.description + ' — ' : '') + 'Cliquer pour insérer {{' + item.node.path + '}}'"
+          >
+            @if (item.hasChildren) {
+              <button
+                type="button"
+                class="tree-caret"
+                (click)="toggleNodeCollapse(item.node.path); $event.stopPropagation()"
+              >
+                {{ item.isCollapsed ? '▸' : '▾' }}
+              </button>
+            } @else {
+              <span class="tree-caret-spacer"></span>
+            }
+
+            <div class="field-col">
+              <div class="field-top">
+                <span class="field-key">
+                  {{ item.node.key }}
+                  @if (item.node.required) {
+                    <span class="req-dot">*</span>
+                  }
+                </span>
+                <span class="type-badge" [attr.data-type]="item.node.type">
+                  {{ item.node.isArray ? 'arr[]' : item.node.format || item.node.type }}
+                </span>
+              </div>
+              @if (item.samplePreview) {
+                <div class="sample-val">{{ item.samplePreview }}</div>
+              }
+            </div>
+
+            <button
+              type="button"
+              class="copy-btn"
+              (click)="copySchemaBinding(item.node.path, $event)"
+              [title]="'Copier le binding pour ' + item.node.path"
+            >
+              {{ copiedPath() === item.node.path ? '✓' : '⎘' }}
+            </button>
+          </div>
+        } @empty {
+          <div class="empty-msg">
+            Aucun schéma défini.<br />
+            Cliquez sur <strong>✦ Inférer JSON</strong> pour détecter vos champs en 1 clic.
+          </div>
+        }
+      </div>
+
+      <!-- Collapsible Inline Test Data Quick Editor -->
+      <div class="inline-data-drawer">
+        <button
+          type="button"
+          class="inline-data-toggle"
+          (click)="showInlineData.set(!showInlineData())"
+        >
+          <span>{{ showInlineData() ? '▾' : '▸' }} Données de test (aperçu rapide)</span>
+          <span class="badge-live">JSON</span>
+        </button>
+
+        @if (showInlineData()) {
+          <div class="inline-data-body">
+            <textarea
+              class="inline-json"
+              rows="7"
+              spellcheck="false"
+              [ngModel]="inlineDataDraft()"
+              (ngModelChange)="inlineDataDraft.set($event)"
+            ></textarea>
+            @if (inlineDataError()) {
+              <div class="inline-err">{{ inlineDataError() }}</div>
+            }
+            <button type="button" class="mini-btn primary full" (click)="applyInlineSampleData()">
+              ⚡ Appliquer &amp; Recompiler
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</aside>
+
+<!-- Modal: Infer Schema from JSON -->
+@if (showInferModal()) {
+  <div class="modal-backdrop" (click)="closeInferDialog()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3>Inférer le schéma depuis un JSON</h3>
+          <p>Collez un exemple de payload JSON : fX génère automatiquement le JSON Schema Draft-7 et met à jour l’aperçu sans IA.</p>
+        </div>
+        <button type="button" class="close-x" (click)="closeInferDialog()">×</button>
+      </div>
+      <textarea
+        class="infer-textarea"
+        rows="12"
+        spellcheck="false"
+        [ngModel]="inferInput()"
+        (ngModelChange)="inferInput.set($event)"
+      ></textarea>
+      @if (inferError()) {
+        <div class="infer-error">{{ inferError() }}</div>
+      }
+      <div class="modal-foot">
+        <button type="button" class="mini-btn" (click)="closeInferDialog()">Annuler</button>
+        <button
+          type="button"
+          class="mini-btn primary"
+          [disabled]="isInferring()"
+          (click)="runInferSchema()"
+        >
+          {{ isInferring() ? 'Analyse en cours…' : '✦ Inférer & Appliquer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -2,15 +2,20 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/solarpush/fx/pkg/invoice"
+	"github.com/solarpush/fx/pkg/registry"
+	"github.com/solarpush/fx/pkg/render"
 	"github.com/solarpush/fx/pkg/template"
 )
 
@@ -27,17 +32,98 @@ func NewTemplateManager(templatesPath string) *TemplateManager {
 	}
 }
 
+// getTemplatesDir retourne le répertoire racine des templates en respectant
+// la variable d'environnement TEMPLATES_PATH (défaut: ./templates-custom).
+func getTemplatesDir() string {
+	if p := strings.TrimSpace(os.Getenv("TEMPLATES_PATH")); p != "" {
+		return filepath.Clean(p)
+	}
+	return registry.DefaultBaseDir
+}
+
+// templatesDir résout le répertoire des templates pour le handler courant.
+func (h *Handler) templatesDir() string {
+	if p := strings.TrimSpace(os.Getenv("TEMPLATES_PATH")); p != "" {
+		return filepath.Clean(p)
+	}
+	if h != nil && h.registry != nil && h.registry.BaseDir() != "" {
+		return h.registry.BaseDir()
+	}
+	return registry.DefaultBaseDir
+}
+
+// validateTemplateID rejette tout identifiant contenant des séparateurs de
+// chemin ('/', '\'), des séquences de traversée (".."), ou des octets NUL.
+func validateTemplateID(templateID string) error {
+	if templateID == "" || strings.TrimSpace(templateID) == "" {
+		return errors.New("invalid template id")
+	}
+	if strings.ContainsAny(templateID, "/\\\x00") || strings.Contains(templateID, "..") {
+		return errors.New("invalid template id")
+	}
+	base := filepath.Base(templateID)
+	if base != templateID || base == "." || base == ".." {
+		return errors.New("invalid template id")
+	}
+	return nil
+}
+
+// decodeTemplateIDParam décode un paramètre de route encodé en URL et valide
+// strictement qu'il ne tente aucune traversée de répertoire.
+func decodeTemplateIDParam(raw string) (string, error) {
+	if raw == "" {
+		return "", errors.New("invalid template id")
+	}
+	decoded, err := url.PathUnescape(raw)
+	if err != nil {
+		return "", errors.New("invalid template id")
+	}
+	if err := validateTemplateID(decoded); err != nil {
+		return "", err
+	}
+	return decoded, nil
+}
+
+// resolveSafeTemplatePath valide templateID et garantit que le chemin résolu
+// reste strictement confiné à l'intérieur de baseDir.
+func resolveSafeTemplatePath(baseDir, templateID string) (string, error) {
+	if err := validateTemplateID(templateID); err != nil {
+		return "", err
+	}
+	absBase, err := filepath.Abs(baseDir)
+	if err != nil {
+		return "", errors.New("invalid template id")
+	}
+	target := filepath.Join(absBase, templateID)
+	absTarget, err := filepath.Abs(target)
+	if err != nil {
+		return "", errors.New("invalid template id")
+	}
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", errors.New("invalid template id")
+	}
+	return filepath.Join(baseDir, templateID), nil
+}
+
 // HandleListTemplates liste tous les templates
 func (h *Handler) HandleListTemplates(w http.ResponseWriter, r *http.Request) {
-	templatesPath := "./templates-custom"
+	templatesPath := h.templatesDir()
 
 	files, err := os.ReadDir(templatesPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			WriteSuccess(w, TemplateListResponse{
+				Templates: []TemplateResponse{},
+				Total:     0,
+			})
+			return
+		}
 		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("failed to read templates: %v", err))
 		return
 	}
 
-	var templates []TemplateResponse
+	templates := make([]TemplateResponse, 0)
 	for _, file := range files {
 		if file.IsDir() {
 			continue
@@ -52,13 +138,17 @@ func (h *Handler) HandleListTemplates(w http.ResponseWriter, r *http.Request) {
 		name := file.Name()
 
 		info, _ := file.Info()
+		var modTime time.Time
+		if info != nil {
+			modTime = info.ModTime()
+		}
 
 		templates = append(templates, TemplateResponse{
 			ID:        name,
 			Name:      name,
 			Type:      "typst",
-			CreatedAt: info.ModTime(),
-			UpdatedAt: info.ModTime(),
+			CreatedAt: modTime,
+			UpdatedAt: modTime,
 		})
 	}
 
@@ -71,9 +161,17 @@ func (h *Handler) HandleListTemplates(w http.ResponseWriter, r *http.Request) {
 // HandleGetTemplate récupère un template spécifique
 func (h *Handler) HandleGetTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	templateID := vars["id"]
+	templateID, err := decodeTemplateIDParam(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
-	templatePath := filepath.Join("./templates-custom", templateID)
+	templatePath, err := resolveSafeTemplatePath(h.templatesDir(), templateID)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	content, err := os.ReadFile(templatePath)
 	if err != nil {
@@ -86,13 +184,17 @@ func (h *Handler) HandleGetTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	info, _ := os.Stat(templatePath)
+	var updated time.Time
+	if info != nil {
+		updated = info.ModTime()
+	}
 
 	WriteSuccess(w, map[string]interface{}{
 		"id":      templateID,
 		"name":    templateID,
 		"type":    "typst",
 		"content": string(content),
-		"updated": info.ModTime(),
+		"updated": updated,
 	})
 }
 
@@ -112,18 +214,37 @@ func (h *Handler) HandleCreateTemplate(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "name is required")
 		return
 	}
+	if err := validateTemplateID(req.Name); err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	// Enlever l'extension existante si présente
 	baseName := req.Name
 	if ext := filepath.Ext(baseName); ext == ".typ" {
 		baseName = baseName[:len(baseName)-len(ext)]
 	}
+	if err := validateTemplateID(baseName); err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	if req.Content == "" {
 		WriteError(w, http.StatusBadRequest, "content is required for typst templates")
 		return
 	}
-	typPath := filepath.Join("./templates-custom", baseName+".typ")
+
+	dir := h.templatesDir()
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create templates directory: %v", err))
+		return
+	}
+
+	typPath, err := resolveSafeTemplatePath(dir, baseName+".typ")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	if err := os.WriteFile(typPath, []byte(req.Content), 0644); err != nil {
 		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("failed to save template: %v", err))
@@ -142,7 +263,11 @@ func (h *Handler) HandleCreateTemplate(w http.ResponseWriter, r *http.Request) {
 // HandleUpdateTemplate met à jour un template existant
 func (h *Handler) HandleUpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	templateID := vars["id"]
+	templateID, err := decodeTemplateIDParam(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	var req struct {
 		Name    string `json:"name"`
@@ -158,7 +283,11 @@ func (h *Handler) HandleUpdateTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templatePath := filepath.Join("./templates-custom", templateID)
+	templatePath, err := resolveSafeTemplatePath(h.templatesDir(), templateID)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	// Si le fichier n'existe pas, on renvoie une erreur 404
 	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
@@ -182,9 +311,17 @@ func (h *Handler) HandleUpdateTemplate(w http.ResponseWriter, r *http.Request) {
 // HandleDeleteTemplate supprime un template
 func (h *Handler) HandleDeleteTemplate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	templateID := vars["id"]
+	templateID, err := decodeTemplateIDParam(vars["id"])
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
-	templatePath := filepath.Join("./templates-custom", templateID)
+	templatePath, err := resolveSafeTemplatePath(h.templatesDir(), templateID)
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid template id")
+		return
+	}
 
 	if err := os.Remove(templatePath); err != nil {
 		if os.IsNotExist(err) {
@@ -229,6 +366,28 @@ func (h *Handler) HandleCompilePreview(w http.ResponseWriter, r *http.Request) {
 	jsonData, err := invoice.ToJSON(inv)
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, fmt.Sprintf("failed to serialize data: %v", err))
+		return
+	}
+
+	// Fallback transparent sur le moteur de rendu unifié si la CLI Typst legacy est absente
+	if h.pipeline == nil && h.renderEngine != nil {
+		res, err := h.renderEngine.Render(r.Context(), &render.RenderRequest{
+			Template: req.Template,
+			Data:     jsonData,
+			Format:   render.FormatPDF,
+			Modules:  []render.ModuleConfig{{Name: "license"}},
+		})
+		if err != nil {
+			WriteError(w, http.StatusInternalServerError, fmt.Sprintf("compilation error: %v", err))
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", "inline; filename=preview.pdf")
+		_, _ = w.Write(res.Data)
+		return
+	}
+	if h.pipeline == nil {
+		WriteError(w, http.StatusServiceUnavailable, "compiler backend unavailable")
 		return
 	}
 

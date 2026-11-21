@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+// Expressions régulières précompilées au niveau du package pour éviter toute
+// recompilation à chaque appel de Render.
+var (
+	cleanupRegex = regexp.MustCompile(`\{\{[#/][^}]+\}\}`)
+	eachRegex    = regexp.MustCompile(`(?s)\{\{#each\s+([\w.]+)\}\}(.*?)\{\{/each\}\}`)
+	varRegex     = regexp.MustCompile(`\{\{([^}#/]+)\}\}`)
+	ifRegex      = regexp.MustCompile(`(?s)\{\{#if\s+([^}]+)\}\}(.*?)\{\{/if\}\}`)
+	tokenRegex   = regexp.MustCompile(`\{\{([^}]+)\}\}`)
+	identRegex   = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)
+)
+
 // Engine gère le remplacement de variables dans les templates Typst
 type Engine struct {
 	data map[string]interface{}
@@ -43,7 +54,6 @@ func (e *Engine) Render(templateContent string) (string, error) {
 	result = e.replaceVariables(result)
 
 	// 4. Nettoyer les balises Handlebars orphelines (ex: oubli de {{/if}} par l'IA) pour éviter de faire crasher Typst
-	cleanupRegex := regexp.MustCompile(`\{\{[#/][^}]+\}\}`)
 	result = cleanupRegex.ReplaceAllString(result, "")
 
 	return result, nil
@@ -51,8 +61,6 @@ func (e *Engine) Render(templateContent string) (string, error) {
 
 // processLoops traite les boucles {{#each array}}...{{/each}}
 func (e *Engine) processLoops(content string) (string, error) {
-	eachRegex := regexp.MustCompile(`(?s)\{\{#each\s+([\w.]+)\}\}(.*?)\{\{/each\}\}`)
-
 	result := eachRegex.ReplaceAllStringFunc(content, func(match string) string {
 		matches := eachRegex.FindStringSubmatch(match)
 		if len(matches) < 3 {
@@ -137,8 +145,6 @@ func formatValue(key string, value interface{}) string {
 
 // replaceVariables remplace les variables simples {{path.to.value}}
 func (e *Engine) replaceVariables(content string) string {
-	varRegex := regexp.MustCompile(`\{\{([^}#/]+)\}\}`)
-
 	return varRegex.ReplaceAllStringFunc(content, func(match string) string {
 		matches := varRegex.FindStringSubmatch(match)
 		if len(matches) < 2 {
@@ -175,8 +181,6 @@ func (e *Engine) getNestedValue(path string) interface{} {
 
 // processIfs traite les conditions {{#if path.to.var}}...{{/if}}
 func (e *Engine) processIfs(content string) (string, error) {
-	ifRegex := regexp.MustCompile(`(?s)\{\{#if\s+([^}]+)\}\}(.*?)\{\{/if\}\}`)
-
 	result := ifRegex.ReplaceAllStringFunc(content, func(match string) string {
 		matches := ifRegex.FindStringSubmatch(match)
 		if len(matches) < 3 {
@@ -217,15 +221,12 @@ func (e *Engine) processIfs(content string) (string, error) {
 	return result, nil
 }
 
-// tokenRegex capture toutes les balises Handlebars {{ ... }} (variables, #each,
-// #if, /each, /if).
-var tokenRegex = regexp.MustCompile(`\{\{([^}]+)\}\}`)
-
 // ExtractReferences analyse un template et renvoie la liste triée et dédupliquée
 // des chemins de données référencés. Les références à l'intérieur d'une boucle
 // {{#each lines}} sont préfixées par le nom du tableau suivi de "[]" (ex:
 // "lines[].description") afin de correspondre aux chemins produits par
-// schema.CollectPaths. Les blocs de fermeture et les helpers sont ignorés.
+// schema.CollectPaths. Supporte les helpers inline (ex: {{bytes src}}) et les
+// chemins relatifs parents (ex: {{../style_image}}).
 func ExtractReferences(templateContent string) []string {
 	set := map[string]struct{}{}
 	var scopes []string // pile des tableaux #each en cours
@@ -256,6 +257,12 @@ func ExtractReferences(templateContent string) []string {
 		case strings.HasPrefix(expr, "/if"), strings.HasPrefix(expr, "else"), strings.HasPrefix(expr, "!"):
 			// Fermetures et commentaires: rien à collecter.
 		default:
+			if _, arg, ok := parseHelper(expr); ok {
+				if p := qualify(arg, scopes); p != "" {
+					set[p] = struct{}{}
+				}
+				continue
+			}
 			if p := qualify(expr, scopes); p != "" {
 				set[p] = struct{}{}
 			}
@@ -271,17 +278,42 @@ func ExtractReferences(templateContent string) []string {
 }
 
 // qualify normalise une référence: ignore les chemins non-données (guillemets,
-// fonctions) et, si l'on est dans une boucle, préfixe les clés relatives par le
-// tableau courant ("description" -> "lines[].description").
+// fonctions), résout les préfixes `../` sur la pile des scopes parents, et si
+// l'on est dans une boucle, préfixe les clés relatives par le tableau courant
+// ("description" -> "lines[].description").
 func qualify(ref string, scopes []string) string {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		return ""
 	}
-	// Ignorer tout ce qui n'est pas un simple chemin a.b.c (helpers, littéraux).
+
+	up := 0
+	for strings.HasPrefix(ref, "../") {
+		ref = ref[3:]
+		up++
+	}
+	ref = strings.TrimSpace(ref)
+	if ref == "" || ref == "this" || ref == "." {
+		return ""
+	}
+
+	// Ignorer tout ce qui n'est pas un simple chemin a.b.c (helpers inconnus, littéraux).
 	if !identRegex.MatchString(ref) {
 		return ""
 	}
+
+	if up > 0 {
+		targetIdx := len(scopes) - 1 - up
+		if targetIdx < 0 {
+			return ref
+		}
+		target := scopes[targetIdx]
+		if target == "" {
+			return ref
+		}
+		return target + "[]." + ref
+	}
+
 	// Une référence absolue commençant par un scope connu reste inchangée.
 	if len(scopes) > 0 {
 		current := scopes[len(scopes)-1]
@@ -295,5 +327,3 @@ func qualify(ref string, scopes []string) string {
 	}
 	return ref
 }
-
-var identRegex = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$`)

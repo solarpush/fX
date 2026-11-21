@@ -1,0 +1,340 @@
+<section class="preview-shell">
+  <!-- Studio Stage Toolbar -->
+  <div class="preview-bar">
+    <div class="bar-group">
+      <!-- Vector SVG vs Real PDF -->
+      <div class="seg-ctrl">
+        <button
+          type="button"
+          [class.active]="mode() === 'svg'"
+          (click)="setMode('svg')"
+          title="Aperçu vectoriel interactif multi-pages"
+        >
+          ✦ SVG
+        </button>
+        <button
+          type="button"
+          [class.active]="mode() === 'pdf'"
+          (click)="setMode('pdf')"
+          title="Aperçu PDF natif exact"
+        >
+          PDF
+        </button>
+      </div>
+
+      @if (mode() === 'svg') {
+        <div class="seg-ctrl">
+          @for (z of zoomOptions; track z) {
+            <button type="button" [class.active]="zoom() === z" (click)="setZoom(z)">
+              {{ z === 'fit' ? 'Fit' : z + '%' }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Center: Real Data vs Variables X-Ray Toggle + Quick Test Data Button -->
+    <div class="bar-group">
+      <div class="seg-ctrl xray-seg">
+        <button
+          type="button"
+          [class.active]="dataPreviewMode() === 'real'"
+          (click)="setDataPreviewMode('real')"
+          title="Afficher le document avec vos données de test réelles"
+        >
+          Données réelles
+        </button>
+        <button
+          type="button"
+          class="xray-btn"
+          [class.active]="dataPreviewMode() === 'xray'"
+          (click)="setDataPreviewMode('xray')"
+          [title]="'Mode X-Ray : affiche chaque variable {{…}} directement sur la page'"
+        >
+          Variables {{ '{{…}}' }}
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="data-quick-btn"
+        title="Modifier les données de test JSON / JSON Schema"
+        (click)="openDataModal.emit()"
+      >
+        &#123; &#125; Données de test
+      </button>
+    </div>
+
+    <!-- Right: Perf, Transport, Refresh -->
+    <div class="bar-group">
+      @if (isCompiling()) {
+        <span class="perf-pill compiling">
+          <span class="spin-dot"></span>
+          Compil…
+        </span>
+      } @else if (durationMs() !== null) {
+        <span class="perf-pill" [class.rust]="isRustBackend()">
+          {{ isRustBackend() ? '⚡' : '⚙' }} {{ durationMs() }} ms
+        </span>
+      }
+
+      <span
+        class="transport-pill"
+        [class.ws]="transport() === 'ws'"
+        [title]="transport() === 'ws' ? 'WebSocket temps réel' : 'Rendu HTTP'"
+      >
+        <span class="t-dot"></span>
+        {{ transport() === 'ws' ? 'WS' : 'HTTP' }}
+      </span>
+
+      <button type="button" class="refresh-btn" title="Recompiler maintenant" (click)="refreshRequested.emit()">
+        ↻
+      </button>
+    </div>
+  </div>
+
+  <!-- Subtle X-Ray Active Indicator Strip -->
+  @if (dataPreviewMode() === 'xray') {
+    <div class="xray-strip">
+      <span>✦ Mode <strong>Variables (X-Ray)</strong> actif — les champs liés affichent leur chemin <code>« chemin »</code> en direct.</span>
+      <button type="button" (click)="setDataPreviewMode('real')">Revenir aux données réelles</button>
+    </div>
+  }
+
+  <!-- Non-destructive Error Banner -->
+  @if (hasError()) {
+    <div class="error-banner">
+      <div class="err-head">
+        <span class="err-title">⚠ Erreur de compilation (dernier aperçu valide conservé)</span>
+        <div class="err-acts">
+          <button type="button" class="ai-fix-btn" (click)="fixWithAi.emit()">
+            ✦ Corriger avec l’IA
+          </button>
+          <button type="button" class="toggle-err" (click)="errorExpanded.set(!errorExpanded())">
+            {{ errorExpanded() ? '▾' : '▸' }}
+          </button>
+        </div>
+      </div>
+      @if (errorExpanded()) {
+        <div class="err-body">
+          @if (errorMessage()) {
+            <div class="err-line">{{ errorMessage() }}</div>
+          }
+          @for (d of diagnostics(); track $index) {
+            <div class="err-line">
+              @if (d.line) {
+                <strong>L{{ d.line }}</strong> :
+              }
+              {{ d.message }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Interactive Stage Viewport (Dot Grid + Floating Paper Sheets) -->
+  <div
+    class="preview-canvas"
+    cdkDropList
+    id="fx-page-dropzone"
+    [cdkDropListSortingDisabled]="true"
+    (cdkDropListDropped)="onPaletteDroppedOnPage($event)"
+    (click)="onCanvasBackgroundClick()"
+  >
+    @if (mode() === 'svg') {
+      @if (sanitizedPages().length > 0) {
+        <div class="pages-stack" [class.is-updating]="isCompiling()">
+          @for (pageHtml of sanitizedPages(); track $index; let pIdx = $index) {
+            <div
+              class="page-wrapper"
+              [style.width.px]="pageWidthPx()"
+              [class.fit-mode]="zoom() === 'fit'"
+            >
+              <div class="page-meta-row" (click)="$event.stopPropagation()">
+                <span>Page {{ pIdx + 1 }} / {{ sanitizedPages().length }}</span>
+                @if (blueprint()) {
+                  @if (hasLayoutBoxes()) {
+                    <span class="meta-hint">Cliquez un bloc directement sur la page pour l’éditer</span>
+                  } @else if (!isCompiling()) {
+                    <span class="meta-notice">Overlay exact indisponible (backend CLI) — sélectionnez dans Structure</span>
+                  }
+                }
+              </div>
+
+              <div class="paper-sheet" (click)="onPaperClick($event)" (mouseleave)="onBoxHover(null)">
+                <div class="svg-host" [innerHTML]="pageHtml"></div>
+
+                <!-- Pixel-Exact Interactive LayoutBox Overlay -->
+                @if (blueprint() && boxesForPage(pIdx + 1).length > 0) {
+                  <div class="boxes-overlay">
+                    @for (item of boxesForPage(pIdx + 1); track item.key) {
+                      <div
+                        class="hit-box"
+                        [class.hovered]="hoveredBoxKey() === item.key && selectedBlockId() !== item.box.id"
+                        [class.selected]="selectedBlockId() === item.box.id"
+                        [style.left.%]="item.leftPct"
+                        [style.top.%]="item.topPct"
+                        [style.width.%]="item.widthPct"
+                        [style.height.%]="item.heightPct"
+                        [style.z-index]="item.zIndex"
+                        (mouseenter)="onBoxHover(item.key, $event)"
+                        (mousemove)="onBoxHover(item.key, $event)"
+                        (click)="onBoxClick(item.box.id, $event)"
+                      >
+                        <!-- Hover Pill Label -->
+                        @if (hoveredBoxKey() === item.key && selectedBlockId() !== item.box.id) {
+                          <span class="hover-pill">{{ item.label }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Dedicated Top Layer for Selected Block Floating Action Toolbar (never blocks nested children!) -->
+                  @if (selectedToolbarBoxForPage(pIdx + 1); as selBox) {
+                    @if (selectedContext(); as ctx) {
+                      <div
+                        class="toolbar-anchor"
+                        [style.left.%]="selBox.leftPct"
+                        [style.top.%]="selBox.topPct"
+                        [style.width.%]="selBox.widthPct"
+                        [style.height.%]="selBox.heightPct"
+                      >
+                        <div
+                          class="floating-bar"
+                          [class.inside-top]="selBox.toolbarInsideTop"
+                          [class.align-right]="selBox.toolbarAlignRight"
+                          (click)="$event.stopPropagation()"
+                          (mouseenter)="onBoxHover(null, $event)"
+                        >
+                          <span class="fb-type">
+                            <span class="fb-glyph">{{ ctx.glyph }}</span>
+                            <span>{{ ctx.label }}</span>
+                          </span>
+
+                          @if (ctx.parentId && ctx.parentLabel) {
+                            <button
+                              type="button"
+                              class="fb-parent"
+                              [title]="'Sélectionner le conteneur parent : ' + ctx.parentLabel"
+                              (click)="onJumpParent(ctx.parentId, $event)"
+                            >
+                              ↑ {{ ctx.parentLabel }}
+                            </button>
+                          }
+
+                          <span class="fb-sep"></span>
+
+                          <button
+                            type="button"
+                            class="fb-btn"
+                            [disabled]="!ctx.canMoveUp"
+                            title="Monter le bloc"
+                            (click)="onNudge(ctx.block.id, 'up', $event)"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            class="fb-btn"
+                            [disabled]="!ctx.canMoveDown"
+                            title="Descendre le bloc"
+                            (click)="onNudge(ctx.block.id, 'down', $event)"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            class="fb-btn add"
+                            [class.active]="showInlinePicker()"
+                            title="Insérer un bloc juste dessous"
+                            (click)="onToggleInlinePicker($event)"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            class="fb-btn"
+                            title="Dupliquer"
+                            (click)="onDuplicate(ctx.block.id, $event)"
+                          >
+                            ⧉
+                          </button>
+                          <button
+                            type="button"
+                            class="fb-btn danger"
+                            title="Supprimer"
+                            (click)="onDelete(ctx.block.id, $event)"
+                          >
+                            ✕
+                          </button>
+
+                          <!-- Sleek Inline Block Picker below Floating Bar -->
+                          @if (showInlinePicker()) {
+                            <div class="inline-picker" (click)="$event.stopPropagation()">
+                              <input
+                                type="text"
+                                class="ip-search"
+                                placeholder="Insérer après {{ ctx.label }}…"
+                                [ngModel]="inlinePickerSearch()"
+                                (ngModelChange)="inlinePickerSearch.set($event)"
+                              />
+                              <div class="ip-grid">
+                                @for (bt of filteredInlineBlocks(); track bt.type) {
+                                  <button
+                                    type="button"
+                                    class="ip-item"
+                                    (click)="onPickInlineInsert(ctx.block.id, bt.type, $event)"
+                                  >
+                                    <span class="ip-glyph" [attr.data-cat]="bt.category">
+                                      {{ glyphForType(bt.type) }}
+                                    </span>
+                                    <span>{{ bt.label }}</span>
+                                  </button>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-preview">
+          @if (isCompiling()) {
+            <div class="loader-ring"></div>
+            <p>Compilation du rendu vectoriel en cours…</p>
+          } @else {
+            <div class="empty-glyph">📄</div>
+            <p>L’aperçu vectoriel interactif apparaîtra ici dès la première compilation.</p>
+            <button type="button" class="retry-btn" (click)="refreshRequested.emit(); $event.stopPropagation()">
+              Lancer l’aperçu
+            </button>
+          }
+        </div>
+      }
+    } @else {
+      @if (pdfSafeUrl(); as safePdf) {
+        <iframe class="pdf-frame" [src]="safePdf" title="Aperçu PDF réel"></iframe>
+      } @else {
+        <div class="empty-preview">
+          @if (isCompiling()) {
+            <div class="loader-ring"></div>
+            <p>Génération du PDF réel…</p>
+          } @else {
+            <div class="empty-glyph">📑</div>
+            <p>Aucun PDF généré pour le moment.</p>
+            <button type="button" class="retry-btn" (click)="refreshRequested.emit(); $event.stopPropagation()">
+              Générer le PDF
+            </button>
+          }
+        </div>
+      }
+    }
+  </div>
+</section>

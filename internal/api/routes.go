@@ -38,7 +38,15 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // SetupRoutes configure toutes les routes de l'API
 func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
-	r := mux.NewRouter()
+	if cfg == nil {
+		cfg = &config.Config{
+			Features: config.FeaturesConfig{StudioEnabled: true},
+		}
+	}
+
+	// UseEncodedPath permet de transmettre les segments encodés (ex: %2F) aux handlers
+	// afin de rejeter proprement les tentatives de path traversal en 400 Bad Request.
+	r := mux.NewRouter().UseEncodedPath()
 
 	// Middlewares globaux
 	r.Use(RecoveryMiddleware)
@@ -62,7 +70,29 @@ func SetupRoutes(handler *Handler, cfg *config.Config) *mux.Router {
 
 	protectedApi.HandleFunc("/auth/me", handler.HandleMe).Methods(http.MethodGet, http.MethodOptions)
 
-	// Routes de génération
+	// --- Moteur de rendu universel fX v2 (toujours actif) ---
+	protectedApi.HandleFunc("/capabilities", handler.HandleCapabilities).Methods(http.MethodGet, http.MethodOptions)
+	protectedApi.HandleFunc("/render/batch", handler.HandleRenderBatch).Methods(http.MethodPost, http.MethodOptions)
+	protectedApi.HandleFunc("/render", handler.HandleUniversalRender).Methods(http.MethodPost, http.MethodOptions)
+
+	// --- Studio Builder v2 & AI Co-pilot v2 (feature-flag STUDIO_ENABLED, défaut: true) ---
+	if cfg.Features.StudioEnabled {
+		protectedApi.HandleFunc("/studio/presets", handler.HandleStudioPresets).Methods(http.MethodGet, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates", handler.HandleListStudioTemplates).Methods(http.MethodGet, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates", handler.HandleCreateStudioTemplate).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates/{id}/versions", handler.HandleListStudioTemplateVersions).Methods(http.MethodGet, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates/{id}/render", handler.HandleRenderStudioTemplate).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates/{id}", handler.HandleGetStudioTemplate).Methods(http.MethodGet, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates/{id}", handler.HandleUpdateStudioTemplate).Methods(http.MethodPut, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/templates/{id}", handler.HandleDeleteStudioTemplate).Methods(http.MethodDelete, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/blueprint/compile", handler.HandleBlueprintCompile).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/blueprint/patch", handler.HandleBlueprintPatch).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/studio/schema/infer", handler.HandleSchemaInfer).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/ai/studio/generate", handler.HandleAIStudioGenerate).Methods(http.MethodPost, http.MethodOptions)
+		protectedApi.HandleFunc("/ai/schema/generate", handler.HandleAISchemaGenerate).Methods(http.MethodPost, http.MethodOptions)
+	}
+
+	// Routes de génération Factur-X (v1)
 	protectedApi.HandleFunc("/generate", handler.HandleGenerateFacturX).Methods(http.MethodPost, http.MethodOptions)
 	protectedApi.HandleFunc("/generate/pdf", handler.HandleGeneratePDF).Methods(http.MethodPost, http.MethodOptions)
 	protectedApi.HandleFunc("/generate/xml", handler.HandleGenerateXML).Methods(http.MethodPost, http.MethodOptions)

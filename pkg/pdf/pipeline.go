@@ -142,6 +142,12 @@ func (fp *FacturXPipeline) loadTemplate(templatePath string) ([]byte, error) {
 
 // patchFacturXPDF manipule les objets PDF de bas niveau pour rendre le fichier conforme Factur-X
 func (fp *FacturXPipeline) patchFacturXPDF(pdfContent []byte, profile invoice.Profile) ([]byte, error) {
+	return PatchFacturXPDF(pdfContent, profile)
+}
+
+// PatchFacturXPDF manipule les objets PDF de bas niveau (métadonnées XMP et
+// dictionnaire /EmbeddedFiles) pour rendre un PDF/A-3b conforme Factur-X.
+func PatchFacturXPDF(pdfContent []byte, profile invoice.Profile) ([]byte, error) {
 	reader := bytes.NewReader(pdfContent)
 	ctx, err := api.ReadContext(reader, nil)
 	if err != nil {

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/solarpush/fx/internal/ai"
@@ -16,29 +18,168 @@ import (
 	"github.com/solarpush/fx/pkg/cii"
 	"github.com/solarpush/fx/pkg/invoice"
 	"github.com/solarpush/fx/pkg/pdf"
+	"github.com/solarpush/fx/pkg/registry"
+	"github.com/solarpush/fx/pkg/render"
+	"github.com/solarpush/fx/pkg/render/modules"
 )
 
 // Handler gestionnaire des requêtes API
 type Handler struct {
-	storage  storage.Storage
-	pipeline *pdf.FacturXPipeline
-	aiClient *ai.Client
-	cfg      *config.Config
+	storage      storage.Storage
+	pipeline     *pdf.FacturXPipeline
+	aiClient     *ai.Client
+	cfg          *config.Config
+	renderEngine *render.Engine
+	registry     *registry.Registry
 }
 
-// NewHandler crée un nouveau handler
+// NewHandlerWithEngine crée un handler avec un moteur de rendu et un registre
+// injectés explicitement (idéal pour les tests d'intégration et le câblage custom).
+func NewHandlerWithEngine(
+	store storage.Storage,
+	aiClient *ai.Client,
+	cfg *config.Config,
+	engine *render.Engine,
+	reg *registry.Registry,
+) *Handler {
+	if reg == nil && engine != nil {
+		reg = engine.Registry()
+	}
+	if reg == nil {
+		reg = registry.New(getTemplatesDir())
+	}
+	if cfg == nil {
+		cfg = &config.Config{
+			Features: config.FeaturesConfig{StudioEnabled: true},
+			Render:   config.RenderConfig{Backend: "auto", MaxBatchSize: 100},
+		}
+	}
+	if engine != nil && cfg.Render.MaxBatchSize > 0 {
+		engine.SetMaxBatchSize(cfg.Render.MaxBatchSize)
+	}
+
+	pipeline, _ := pdf.NewFacturXPipeline()
+
+	return &Handler{
+		storage:      store,
+		pipeline:     pipeline,
+		aiClient:     aiClient,
+		cfg:          cfg,
+		renderEngine: engine,
+		registry:     reg,
+	}
+}
+
+// NewHandler crée un nouveau handler câblé au moteur de rendu unifié (fX v2),
+// au registre de templates et au pipeline Factur-X legacy si la CLI Typst est présente.
 func NewHandler(store storage.Storage, aiClient *ai.Client, cfg *config.Config) (*Handler, error) {
+	if cfg == nil {
+		cfg = &config.Config{
+			Features: config.FeaturesConfig{StudioEnabled: true},
+			Render:   config.RenderConfig{Backend: "auto", MaxBatchSize: 100},
+		}
+	}
+
+	reg := registry.New(getTemplatesDir())
+
+	var cliBackend render.CompilerBackend
+	var cliErr error
+	if cb, err := render.NewCLIBackend(render.CLIConfig{
+		Workers:            cfg.Render.Workers,
+		TmpDir:             cfg.Render.TmpDir,
+		FontPaths:          cfg.Render.FontPaths,
+		IgnoreSystemFonts:  cfg.Render.IgnoreSystemFonts,
+		EnableStaticImages: true,
+		StaticImagesDir:    getImagesDir(),
+	}); err == nil {
+		cliBackend = cb
+	} else {
+		cliErr = err
+	}
+
+	var rustBackend render.CompilerBackend
+	var rustErr error
+	if strings.TrimSpace(cfg.Render.DaemonSocket) != "" || strings.TrimSpace(cfg.Render.DaemonURL) != "" {
+		rb, err := render.NewRustDaemonBackend(render.RustDaemonConfig{
+			SocketPath: cfg.Render.DaemonSocket,
+			BaseURL:    cfg.Render.DaemonURL,
+		})
+		if err != nil {
+			rustErr = err
+		} else {
+			rustBackend = rb
+		}
+	}
+
+	mode := strings.ToLower(strings.TrimSpace(cfg.Render.Backend))
+	if mode == "" {
+		mode = "auto"
+	}
+
+	switch mode {
+	case "rust":
+		if rustBackend == nil {
+			if rustErr != nil {
+				return nil, fmt.Errorf("failed to create rust daemon render backend: %w", rustErr)
+			}
+			return nil, fmt.Errorf("RENDER_BACKEND=rust requires RENDER_DAEMON_SOCKET or RENDER_DAEMON_URL")
+		}
+	case "cli":
+		if cliBackend == nil {
+			return nil, fmt.Errorf("failed to create CLI render backend: %w", cliErr)
+		}
+	default: // "auto"
+		if rustBackend == nil && cliBackend == nil {
+			return nil, fmt.Errorf("no compiler backend available (rust: %v, cli: %v)", rustErr, cliErr)
+		}
+	}
+
+	backend := render.NewSmartBackend(mode, rustBackend, cliBackend)
+	modReg := modules.NewDefaultRegistry()
+	engine := render.NewEngine(backend, modReg, reg)
+	if cfg.Render.MaxBatchSize > 0 {
+		engine.SetMaxBatchSize(cfg.Render.MaxBatchSize)
+	}
+
+	// Le pipeline Factur-X legacy reste optionnel afin de permettre l'exécution
+	// en mode daemon Rust pur sans binaire CLI typst installé.
 	pipeline, err := pdf.NewFacturXPipeline()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pipeline: %w", err)
+		log.Printf("[WARN] Legacy Factur-X CLI pipeline unavailable (%v); continuing with unified render engine (%s)", err, backend.Name())
 	}
 
 	return &Handler{
-		storage:  store,
-		pipeline: pipeline,
-		aiClient: aiClient,
-		cfg:      cfg,
+		storage:      store,
+		pipeline:     pipeline,
+		aiClient:     aiClient,
+		cfg:          cfg,
+		renderEngine: engine,
+		registry:     reg,
 	}, nil
+}
+
+// RenderEngine retourne le moteur de rendu unifié fX v2.
+func (h *Handler) RenderEngine() *render.Engine {
+	if h == nil {
+		return nil
+	}
+	return h.renderEngine
+}
+
+// Registry retourne le registre unifié des templates.
+func (h *Handler) Registry() *registry.Registry {
+	if h == nil {
+		return nil
+	}
+	return h.registry
+}
+
+// Close libère proprement les ressources du moteur de rendu et des backends.
+func (h *Handler) Close() error {
+	if h == nil || h.renderEngine == nil || h.renderEngine.Backend() == nil {
+		return nil
+	}
+	return h.renderEngine.Backend().Close()
 }
 
 // HandleGenerateFacturX génère un PDF Factur-X complet
@@ -65,8 +206,18 @@ func (h *Handler) HandleGenerateFacturX(w http.ResponseWriter, r *http.Request) 
 	// Préparer les options
 	options := &pdf.GenerateOptions{}
 	if req.Options != nil && req.Options.TemplateID != "" {
-		// Charger le template depuis le dossier des templates custom
-		options.TemplatePath = filepath.Join("./templates-custom", req.Options.TemplateID)
+		// Valider et résoudre le template de façon sécurisée (anti path traversal)
+		templatePath, err := resolveSafeTemplatePath(h.templatesDir(), req.Options.TemplateID)
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid template id")
+			return
+		}
+		options.TemplatePath = templatePath
+	}
+
+	if h.pipeline == nil {
+		WriteError(w, http.StatusServiceUnavailable, "legacy typst CLI pipeline unavailable; use POST /api/v1/render")
+		return
 	}
 
 	// Générer le PDF
@@ -135,7 +286,17 @@ func (h *Handler) HandleGeneratePDF(w http.ResponseWriter, r *http.Request) {
 	// Générer uniquement le contenu PDF
 	options := &pdf.GenerateOptions{}
 	if req.Options != nil && req.Options.TemplateID != "" {
-		options.TemplatePath = filepath.Join("./templates-custom", req.Options.TemplateID)
+		templatePath, err := resolveSafeTemplatePath(h.templatesDir(), req.Options.TemplateID)
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid template id")
+			return
+		}
+		options.TemplatePath = templatePath
+	}
+
+	if h.pipeline == nil {
+		WriteError(w, http.StatusServiceUnavailable, "legacy typst CLI pipeline unavailable; use POST /api/v1/render")
+		return
 	}
 
 	pdfData, err := h.pipeline.GeneratePDFOnly(inv, options)
@@ -245,9 +406,34 @@ func (h *Handler) HandleExtract(w http.ResponseWriter, r *http.Request) {
 // HandleAPIInfo documentation de l'API
 func (h *Handler) HandleAPIInfo(w http.ResponseWriter, r *http.Request) {
 	WriteSuccess(w, map[string]interface{}{
-		"name":    "Factur-X Server API",
-		"version": "1.0.0",
+		"name":    "fX Universal Document Engine & Factur-X Server API",
+		"version": "2.0.0",
 		"endpoints": map[string]interface{}{
+			"capabilities": map[string]string{
+				"GET /api/v1/capabilities": "Découverte du backend de rendu, formats, modules, thèmes, blocs et polices",
+			},
+			"render": map[string]string{
+				"POST /api/v1/render":       "Rendu universel (Blueprint/Typst/TemplateID -> PDF, PDF/A-3b, SVG, PNG + modules + négociation Accept)",
+				"POST /api/v1/render/batch": "Rendu batch concurrent borné sur un tableau de payloads JSON",
+			},
+			"studio": map[string]string{
+				"GET /api/v1/studio/presets":                 "Catalogue des presets starter, thèmes, types de blocs et polices",
+				"GET /api/v1/studio/templates":               "Liste des templates unifiés (filtre optionnel ?kind=)",
+				"POST /api/v1/studio/templates":              "Crée un template v2 (Blueprint ou Typst natif + schéma + données d'exemple)",
+				"GET /api/v1/studio/templates/{id}":          "Récupère un template complet",
+				"PUT /api/v1/studio/templates/{id}":          "Met à jour un template et crée un snapshot de version",
+				"DELETE /api/v1/studio/templates/{id}":       "Supprime un template",
+				"GET /api/v1/studio/templates/{id}/versions": "Liste les versions historiques d'un template",
+				"POST /api/v1/studio/templates/{id}/render":  "Rend un template enregistré via le moteur universel",
+				"POST /api/v1/studio/blueprint/compile":      "Valide, compile un Blueprint en Typst et vérifie la couverture du schéma",
+				"POST /api/v1/studio/blueprint/patch":        "Applique des patches atomiques à un Blueprint et recompile",
+				"POST /api/v1/studio/schema/infer":           "Infère un JSON Schema Draft 7 + chemins + mock depuis des données JSON",
+			},
+			"ai": map[string]string{
+				"POST /api/v1/ai/generate":        "Génère du code Typst Factur-X (v1)",
+				"POST /api/v1/ai/studio/generate": "AI Co-pilot v2 (Blueprint/Typst + boucle de compilation & auto-fix serveur)",
+				"POST /api/v1/ai/schema/generate": "Génère un JSON Schema Draft 7 validé et des données d'exemple réalistes",
+			},
 			"generation": map[string]string{
 				"POST /api/v1/generate":     "Génère un PDF Factur-X complet (PDF + XML embarqué)",
 				"POST /api/v1/generate/pdf": "Génère uniquement le PDF (sans XML)",
@@ -257,8 +443,12 @@ func (h *Handler) HandleAPIInfo(w http.ResponseWriter, r *http.Request) {
 				"POST /api/v1/validate": "Valide une facture JSON",
 				"POST /api/v1/extract":  "Extrait les données JSON depuis un PDF Factur-X",
 			},
+			"realtime": map[string]string{
+				"WS /api/v1/ws/preview": "Live preview WebSocket SVG/PDF temps réel (Studio v2 + rétro-compat Factur-X)",
+			},
 			"health": map[string]string{
 				"GET /api/v1/health": "Health check du serveur",
+				"GET /api/v1/config": "Configuration publique des feature flags",
 			},
 		},
 		"documentation": "https://github.com/solarpush/fX",
@@ -278,13 +468,16 @@ func (h *Handler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandlePublicConfig(w http.ResponseWriter, r *http.Request) {
 	allowCustom := false
 	webUIEnabled := true
+	studioEnabled := true
 	if h.cfg != nil {
 		allowCustom = h.cfg.Features.AllowCustomTemplates
 		webUIEnabled = h.cfg.WebUI.Enabled
+		studioEnabled = h.cfg.Features.StudioEnabled
 	}
 	WriteSuccess(w, map[string]interface{}{
 		"allowCustomTemplates": allowCustom,
 		"webUiEnabled":         webUIEnabled,
+		"studioEnabled":        studioEnabled,
 	})
 }
 
@@ -306,7 +499,9 @@ func (h *Handler) buildStoragePath(opts *StorageOptions, inv *invoice.Invoice) s
 
 // getStorageType retourne le type de storage
 func (h *Handler) getStorageType() string {
-	// TODO: Récupérer depuis la config
+	if h.cfg != nil && h.cfg.Storage.Type != "" {
+		return h.cfg.Storage.Type
+	}
 	return "s3"
 }
 

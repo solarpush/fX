@@ -7,6 +7,9 @@
         </h1>
         <nav class="main-nav">
           <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+          @if (config.studioEnabled()) {
+            <a routerLink="/studio" routerLinkActive="active">Studio v2</a>
+          }
           <a routerLink="/templates" routerLinkActive="active">Templates</a>
           @if (config.allowCustom()) {
             <a routerLink="/custom" routerLinkActive="active">Custom</a>

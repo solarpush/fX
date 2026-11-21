@@ -1,0 +1,30 @@
+# Git & IDE
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Local binaries, caches, temp files, runtime storage
+bin/
+dist/
+tmp/
+test/tmp/
+storage/
+coverage.out
+coverage.html
+
+# Heavy local build caches (never send into Docker build context)
+rust/typst-renderd/target/
+ng_web/node_modules/
+ng_web/dist/
+ng_web/.angular/
+
+# Large reference spec PDFs not needed at runtime (keep docs/invoice.schema.json!)
+docs/_Factur-X*
+docs/VALIDATION_REPORT.md
+docs/index.html
+docs/style.css
+
+# Local secrets
+.env

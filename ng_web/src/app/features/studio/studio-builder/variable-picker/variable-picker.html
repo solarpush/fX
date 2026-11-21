@@ -1,0 +1,87 @@
+<button
+  #triggerBtn
+  type="button"
+  class="vp-trigger"
+  [class.active]="isOpen()"
+  [class.compact]="compact()"
+  [title]="buttonTitle()"
+  (click)="toggle($event)"
+>
+  &#123;x&#125;
+</button>
+
+@if (isOpen()) {
+  <div
+    class="vp-popover"
+    [style.top.px]="popPos().top"
+    [style.left.px]="popPos().left"
+    (click)="$event.stopPropagation()"
+    (mousedown)="$event.stopPropagation()"
+  >
+    <div class="vp-head">
+      <input
+        #searchInput
+        type="text"
+        class="vp-search"
+        placeholder="Rechercher une variable…"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </div>
+
+    @if (!fieldOnly()) {
+      <div class="vp-fmt-section">
+        <div class="vp-fmt-head">
+          <span>Formateur</span>
+          <code class="vp-fmt-syntax">{{ activeFormatterMeta().syntax }}</code>
+        </div>
+        <div class="vp-fmt-pills">
+          @for (f of formatters; track f.id) {
+            <button
+              type="button"
+              class="vp-fmt-pill"
+              [class.active]="selectedFormatter() === f.id"
+              [title]="f.label + ' — ' + f.syntax"
+              (click)="selectFormatter(f.id, $event)"
+            >
+              {{ f.short }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="vp-list">
+      @for (grp of fieldGroups(); track grp.id) {
+        <div class="vp-group">
+          <div class="vp-group-title" [class.local]="grp.isLocal">
+            @if (grp.isLocal) {
+              <span>↻</span>
+            }
+            <span>{{ grp.title }}</span>
+          </div>
+          @for (item of grp.items; track item.insertPath) {
+            <button
+              type="button"
+              class="vp-item"
+              [title]="(item.description ? item.description + ' — ' : '') + previewToken(item)"
+              (click)="pickField(item, $event)"
+            >
+              <span class="vp-item-path">{{ item.label }}</span>
+              <span class="vp-type" [attr.data-type]="item.type">{{ item.type }}</span>
+            </button>
+          }
+        </div>
+      } @empty {
+        <div class="vp-empty">
+          @if (search().trim()) {
+            Aucun champ pour « {{ search() }} ».
+          } @else {
+            Aucun champ dans le schéma actif.<br />
+            Inférez un JSON depuis l’onglet <strong>Données</strong>.
+          }
+        </div>
+      }
+    </div>
+  </div>
+}

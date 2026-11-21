@@ -32,10 +32,18 @@ Thumbs.db
 *.wasm
 wasm_exec.js
 
-# Node
+# Node & Angular
 node_modules/
 package-lock.json
+.angular/
 tmp/
+
+# Rust build artifacts
+target/
+
+# Runtime & coverage
+*.sock
+coverage.html
 
 # Env variables
 .env

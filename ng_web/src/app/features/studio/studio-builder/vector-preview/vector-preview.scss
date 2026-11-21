@@ -1,0 +1,93 @@
+:host, .preview-shell, .preview-canvas, .pages-stack, .page-wrapper, .err-body, .inline-picker, .empty-preview { display: flex; flex-direction: column; }
+:host, .preview-shell, .pdf-frame { height: 100%; min-height: 0; }
+:host { background: #131b2e; }
+
+.preview-bar, .bar-group, .err-head, .err-acts, .xray-strip, .page-meta-row { display: flex; align-items: center; gap: 7px; }
+.preview-bar, .err-head, .xray-strip, .page-meta-row { justify-content: space-between; }
+.preview-bar { flex-wrap: wrap; padding: 6px 12px; background: #0b1120; border-bottom: 1px solid #ffffff14; }
+
+.seg-ctrl, .perf-pill, .transport-pill, .fb-type, .floating-bar, .fb-btn, .ip-glyph { display: inline-flex; align-items: center; }
+.seg-ctrl { background: #060b16; border: 1px solid #ffffff17; border-radius: 7px; padding: 2px; gap: 2px; }
+.seg-ctrl button { padding: 4px 8px; border: 0; border-radius: 5px; background: transparent; color: #94a3b8; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.seg-ctrl button:hover { color: #f8fafc; }
+.seg-ctrl button.active { background: #6366f1; color: #fff; }
+.seg-ctrl .xray-btn.active { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+
+.data-quick-btn, .fb-parent { border-radius: 6px; border: 1px solid #ffffff1f; background: #ffffff0c; color: #cbd5e1; font-weight: 600; white-space: nowrap; }
+.data-quick-btn { padding: 5px 9px; font-size: 11px; }
+.fb-parent { padding: 2px 6px; font-size: 10px; }
+.data-quick-btn:hover, .fb-parent:hover { background: #6366f138; border-color: #818cf8; color: #fff; }
+
+.xray-strip { padding: 5px 14px; background: #6366f124; border-bottom: 1px solid #6366f159; font-size: 11px; color: #c7d2fe; }
+.xray-strip code { font-family: ui-monospace, monospace; color: #fff; }
+.xray-strip button { padding: 2px 8px; border-radius: 5px; border: 1px solid #a5b4fc66; background: #6366f140; color: #fff; font-size: 10.5px; font-weight: 600; }
+.xray-strip button:hover { background: #6366f1; }
+
+.perf-pill, .transport-pill { gap: 4px; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+.perf-pill { font: 600 10.5px ui-monospace, monospace; background: #ffffff0f; border: 1px solid #ffffff17; color: #cbd5e1; }
+.perf-pill.rust { background: #10b98124; border-color: #10b98159; color: #6ee7b7; }
+.perf-pill.compiling { background: #6366f129; border-color: #6366f161; color: #c7d2fe; }
+.spin-dot, .t-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.spin-dot { background: #818cf8; animation: pulse .9s infinite ease-in-out; }
+@keyframes pulse { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.2); } }
+.transport-pill { font-size: 10px; font-weight: 700; background: #f59e0b24; color: #fcd34d; }
+.transport-pill.ws { background: #10b98124; color: #34d399; }
+.refresh-btn { width: 26px; height: 26px; border-radius: 6px; background: #ffffff0f; border: 1px solid #ffffff1a; color: #cbd5e1; font-size: 13px; }
+.refresh-btn:hover { background: #ffffff24; color: #fff; }
+
+.error-banner { background: #7f1d1d5c; border-bottom: 1px solid #ef444466; padding: 8px 12px; }
+.err-title { font-size: 11.5px; font-weight: 700; color: #fca5a5; }
+.ai-fix-btn { padding: 4px 10px; border-radius: 6px; border: 0; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; font-size: 11px; font-weight: 600; }
+.toggle-err { background: none; border: 0; color: #fca5a5; font-size: 12px; }
+.err-body { margin-top: 6px; max-height: 110px; overflow-y: auto; gap: 3px; }
+.err-line { font: 11px ui-monospace, monospace; color: #fecaca; }
+
+.preview-canvas { flex: 1; min-height: 0; overflow: auto; background: #151e31 radial-gradient(#94a3b82e 1px, transparent 1px); background-size: 18px 18px; }
+.pages-stack { align-items: center; gap: 28px; padding: 26px 28px 56px; min-width: min-content; }
+.pages-stack.is-updating { opacity: .94; }
+.page-wrapper { gap: 7px; }
+.page-wrapper.fit-mode { width: min(100%, 820px); }
+.page-meta-row { font-size: 10.5px; font-weight: 600; color: #94a3b8; padding: 0 2px; }
+.meta-hint { font-weight: 400; color: #64748b; }
+.meta-notice { font-weight: 500; font-size: 10px; padding: 2px 7px; border-radius: 999px; background: #f59e0b1f; color: #fcd34d; }
+
+.paper-sheet { position: relative; background: #fff; border-radius: 4px; overflow: visible; box-shadow: 0 22px 54px #0206178c, 0 0 0 1px #ffffff1a; }
+.svg-host { display: block; width: 100%; line-height: 0; border-radius: 4px; overflow: hidden; }
+.svg-host ::ng-deep svg { display: block; width: 100%; height: auto; }
+.boxes-overlay, .toolbar-anchor { position: absolute; pointer-events: none; }
+.boxes-overlay { inset: 0; }
+.toolbar-anchor { z-index: 280; }
+.hit-box { position: absolute; pointer-events: auto; cursor: pointer; border-radius: 3px; border: 1.5px solid transparent; }
+.hit-box.hovered { border: 1.5px dashed #6366f1e6; background: #6366f10f; }
+.hit-box.selected { border: 2px solid #6366f1; background: #6366f10d; box-shadow: 0 0 0 3px #6366f12e; }
+.hover-pill { position: absolute; top: -19px; left: -1px; padding: 1.5px 7px; border-radius: 4px 4px 4px 0; background: #4f46e5; color: #fff; font-size: 10px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+.floating-bar { position: absolute; pointer-events: auto; bottom: calc(100% + 6px); left: -2px; gap: 3px; padding: 3px 5px; border-radius: 8px; background: #0b1120; border: 1px solid #6366f1a6; box-shadow: 0 12px 30px #0206178c; white-space: nowrap; z-index: 300; color: #f8fafc; }
+.floating-bar.inside-top { bottom: auto; top: 4px; left: 4px; }
+.floating-bar.align-right { left: auto; right: -2px; }
+.floating-bar.align-right.inside-top { right: 4px; }
+.floating-bar.align-right .inline-picker { left: auto; right: 0; }
+.fb-type { gap: 4px; padding: 2px 6px; font-size: 10.5px; font-weight: 700; color: #e0e7ff; }
+.fb-glyph { font: 700 10px ui-monospace, monospace; color: #818cf8; }
+.fb-sep { width: 1px; height: 14px; background: #ffffff24; margin: 0 2px; }
+.fb-btn { width: 22px; height: 22px; border-radius: 5px; border: 0; background: transparent; color: #cbd5e1; font-size: 11.5px; font-weight: 700; justify-content: center; }
+.fb-btn:hover:not(:disabled) { background: #ffffff24; color: #fff; }
+.fb-btn:disabled { opacity: .3; cursor: not-allowed; }
+.fb-btn.add:hover, .fb-btn.add.active { background: #6366f1; color: #fff; }
+.fb-btn.danger:hover { background: #ef444447; color: #fca5a5; }
+
+.inline-picker { position: absolute; top: calc(100% + 6px); left: 0; width: 290px; padding: 8px; border-radius: 10px; background: #0b1120; border: 1px solid #94a3b83d; box-shadow: 0 18px 44px #020617b8; gap: 7px; z-index: 350; }
+.ip-search { width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid #ffffff1f; background: #0f172a; color: #f8fafc; font-size: 11.5px; outline: none; }
+.ip-search:focus { border-color: #6366f1; }
+.ip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; max-height: 220px; overflow-y: auto; }
+.ip-item { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 5px; border: 1px solid #ffffff0f; background: #ffffff08; color: #e2e8f0; font-size: 11px; text-align: left; overflow: hidden; }
+.ip-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ip-item:hover { background: #6366f138; border-color: #6366f180; color: #fff; }
+.ip-glyph { width: 19px; height: 19px; flex-shrink: 0; border-radius: 4px; justify-content: center; font: 700 9.5px ui-monospace, monospace; background: #6366f133; color: #a5b4fc; }
+
+.pdf-frame { width: 100%; border: 0; background: #1e293b; }
+.empty-preview { flex: 1; align-items: center; justify-content: center; gap: 12px; padding: 32px; text-align: center; color: #94a3b8; font-size: 13px; }
+.empty-glyph { font-size: 36px; opacity: .7; }
+.loader-ring { width: 30px; height: 30px; border: 3px solid #6366f140; border-top-color: #6366f1; border-radius: 50%; animation: spin .75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.retry-btn { padding: 7px 14px; border-radius: 7px; background: #6366f12e; border: 1px solid #6366f173; color: #c7d2fe; font-size: 12px; font-weight: 600; }
+.retry-btn:hover { background: #6366f14d; color: #fff; }

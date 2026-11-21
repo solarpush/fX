@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fX - Tarifs & Licences Commerciales</title>
+    <meta
+      name="description"
+      content="Découvrez les licences commerciales pour fX : performance serverless, déploiement rapide et conformité Factur-X garantie."
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a href="https://github.com/solarpush/fX" class="github-link" target="_blank" rel="noopener noreferrer" aria-label="Voir le dépôt sur GitHub">
+      <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+      <span>GitHub</span>
+    </a>
+    <!-- Background Effects -->
+    <div class="bg-glow top-left"></div>
+    <div class="bg-glow bottom-right"></div>
+
+    <header class="hero">
+      <div class="container">
+        <h1 class="gradient-text">
+          Générez vos factures avec une puissance inégalée
+        </h1>
+        <p class="subtitle">
+          Des licences pensées pour votre croissance. <br />Intégrez fX dans vos
+          produits commerciaux avec la garantie d'une conformité Factur-X
+          absolue.
+        </p>
+      </div>
+    </header>
+
+    <section class="features">
+      <div class="container">
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Performances Brutes</h3>
+            <p>
+              Génération de PDF et XML en quelques millisecondes. Une
+              scalabilité infinie pour traiter des millions de documents sans
+              aucune latence.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3>Ready to Prod en 1h</h3>
+            <p>
+              Ne perdez plus des mois en intégration. Profitez de notre
+              accompagnement expert pour un déploiement sécurisé et opérationnel
+              en un temps record.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>Typst Chat Bot Builder</h3>
+            <p>
+              Créez et personnalisez vos modèles de factures grâce à notre
+              assistant conversationnel Typst. Une conformité légale garantie,
+              sans effort.
+            </p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📑</div>
+            <h3>Documents Sur-Mesure</h3>
+            <p>
+              Au-delà des factures, utilisez notre moteur pour générer vos
+              devis, bons de commande, ou rapports financiers personnalisés avec
+              la même puissance.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="installation">
+      <div class="container">
+        <h2 class="section-title">Modèles d'Installation Flexibles</h2>
+        <p class="section-subtitle">
+          Intégrez fX exactement où vous en avez besoin, sans compromis sur la
+          sécurité ou la performance.
+        </p>
+
+        <div class="install-grid">
+          <div class="install-card">
+            <div class="install-icon">📦</div>
+            <h4>Pattern Sidecar</h4>
+            <p>
+              Déployez fX en tant que sidecar (conteneur compagnon) à côté de
+              votre application principale (ex: Kubernetes). Communication
+              ultra-rapide et isolation parfaite.
+            </p>
+          </div>
+          <div class="install-card">
+            <div class="install-icon">☁️</div>
+            <h4>FUSE sur Cloud Run</h4>
+            <p>
+              Utilisez Cloud Storage FUSE pour monter vos templates Typst
+              directement dans Google Cloud Run. Une architecture 100%
+              serverless, sans gestion d'état complexe.
+            </p>
+          </div>
+          <div class="install-card">
+            <div class="install-icon">🖥️</div>
+            <h4>Compute Engine & Bare Metal</h4>
+            <p>
+              Installation native (binaire ou service systemd) pour vos serveurs
+              dédiés. Contrôle total sur les ressources pour des performances
+              CPU maximales.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="dx-section">
+      <div class="container">
+        <div class="dx-container">
+          <div class="dx-text">
+            <h2 class="section-title" style="text-align: left">
+              Intégration API <br />
+              Ultra-Simple
+            </h2>
+            <p>
+              Une fois votre serveur déployé et vos templates créés, la
+              génération devient un jeu d'enfant.
+              <strong>Un simple appel API synchrone</strong> suffit pour
+              fusionner vos données (JSON) avec le modèle Typst.
+            </p>
+            <p>
+              Récupérez instantanément votre facture PDF (Factur-X) en
+              <strong>stream direct</strong>. Fini les webhooks complexes ou le
+              polling asynchrone. Vous appelez l'API, vous recevez le flux
+              binaire final en quelques millisecondes.
+            </p>
+          </div>
+          <div class="dx-code">
+            <pre><code>// Génération et récupération en stream
+const response = await fetch('https://fx.api/v1/generate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    template: 'facture_b2b.typ',
+    data: invoiceData // Votre payload métier
+  })
+});
+
+// Récupération directe du flux PDF Factur-X
+const pdfStream = response.body;</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="connectors">
+      <div class="container">
+        <h2 class="section-title">Connecteurs Pré-construits</h2>
+        <p class="section-subtitle">
+          Branchez fX directement à vos outils métiers préférés. Générez des
+          factures Factur-X conformes depuis vos plateformes habituelles.
+        </p>
+
+        <div class="connector-grid">
+          <div class="connector-card">
+            <div
+              class="connector-logo"
+              style="background: rgba(16, 185, 129, 0.2); color: #10b981"
+            >
+              P
+            </div>
+            <h4>Pennylane</h4>
+            <p>
+              Export automatique des brouillons et synchronisation comptable.
+            </p>
+            <span class="status-badge upcoming">Bientôt disponible</span>
+          </div>
+          <div class="connector-card">
+            <div
+              class="connector-logo"
+              style="background: rgba(99, 102, 241, 0.2); color: #6366f1"
+            >
+              S
+            </div>
+            <h4>Stripe</h4>
+            <p>
+              Génération de vraies Factur-X B2B à la suite d'un paiement Stripe.
+            </p>
+            <span class="status-badge upcoming">Bientôt disponible</span>
+          </div>
+          <div class="connector-card">
+            <div
+              class="connector-logo"
+              style="background: rgba(236, 72, 153, 0.2); color: #ec4899"
+            >
+              Q
+            </div>
+            <h4>Qonto</h4>
+            <p>
+              Transmission directe de la facture et réconciliation bancaire.
+            </p>
+            <span class="status-badge upcoming">Bientôt disponible</span>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem">
+          <a
+            href="https://github.com/solarpush/fX/issues/new?title=Demande+de+connecteur+fX+%3D%3E+%5B%C3%80+compl%C3%A9ter%5D&body=Bonjour%2C%0A%0AJ%27aimerais+demander+le+d%C3%A9veloppement+d%27un+connecteur+officiel+pour+%5B%C3%80+compl%C3%A9ter%5D.%0ACas+d%27usage+%3A+%5B%C3%80+compl%C3%A9ter%5D%0A%0AMerci+%21"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-outline"
+            style="max-width: 400px; display: inline-block"
+          >
+            Demander un connecteur spécifique
+          </a>
+        </div>
+      </div>
+    </section>
+    <section class="pricing" id="pricing">
+      <div class="container">
+        <h2 class="section-title">
+          Choisissez la licence adaptée à vos ambitions
+        </h2>
+        <p class="section-subtitle">
+          Exemptez-vous de l'AGPL et sécurisez votre infrastructure avec un
+          support professionnel.
+        </p>
+
+        <div class="pricing-grid">
+          <!-- Startup / PME -->
+          <div class="pricing-card">
+            <div class="pricing-header">
+              <span class="tier-name">Startup / PME</span>
+              <div class="price">800€ <span>/ an</span></div>
+              <p class="tier-target">CA < 2M€ ou projet unique</p>
+            </div>
+            <ul class="feature-list">
+              <li>
+                <span class="check">✓</span> Utilisation commerciale
+                propriétaire
+              </li>
+              <li><span class="check">✓</span> Exemption totale de l'AGPL</li>
+              <li>
+                <span class="check">✓</span> Mises à jour légales (normes
+                Factur-X)
+              </li>
+              <li>
+                <span class="check">✓</span> Corrections de bugs prioritaires
+              </li>
+            </ul>
+            <a href="#contact" class="btn btn-outline">Sélectionner</a>
+          </div>
+
+          <!-- Corporate / Scale-up -->
+          <div class="pricing-card featured">
+            <div class="popular-badge">Recommandé</div>
+            <div class="pricing-header">
+              <span class="tier-name">Corporate / Scale-up</span>
+              <div class="price">2 500€ <span>/ an</span></div>
+              <p class="tier-target">ESN, agences, multi-projets</p>
+            </div>
+            <ul class="feature-list">
+              <li>
+                <span class="check">✓</span> Tout ce qui est inclus dans Startup
+              </li>
+              <li>
+                <span class="check">✓</span> Droit d'utilisation multi-projets
+              </li>
+              <li>
+                <span class="check">✓</span> Support technique prioritaire
+              </li>
+              <li><span class="check">✓</span> Garantie SLA de 48h</li>
+              <li><span class="check">✓</span> Accès direct aux experts</li>
+            </ul>
+            <a href="#contact" class="btn btn-primary">Obtenir cette licence</a>
+          </div>
+
+          <!-- Enterprise -->
+          <div class="pricing-card">
+            <div class="pricing-header">
+              <span class="tier-name">Enterprise</span>
+              <div class="price">Sur devis</div>
+              <p class="tier-target">Grands comptes, banques, ERP</p>
+            </div>
+            <ul class="feature-list">
+              <li>
+                <span class="check">✓</span> Licence perpétuelle (achat
+                définitif)
+              </li>
+              <li><span class="check">✓</span> Garantie de non-poursuite</li>
+              <li>
+                <span class="check">✓</span> Assistance à l'intégration
+                sur-mesure
+              </li>
+              <li><span class="check">✓</span> Maintenance annuelle dédiée</li>
+            </ul>
+            <a href="#contact" class="btn btn-outline">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="add-ons">
+      <div class="container">
+        <div class="addon-box">
+          <div class="addon-content">
+            <h3>Besoin d'un accompagnement sur-mesure ?</h3>
+            <p>
+              Que vous utilisiez la version AGPL open-source ou une licence
+              commerciale, nous sommes là pour vous aider (configuration Typst,
+              optimisation, etc.).
+              <strong style="color: var(--text-main)"
+                >L'onboarding est offert !</strong
+              >
+            </p>
+            <p
+              style="
+                margin-top: 0.5rem;
+                font-size: 0.95rem;
+                color: var(--text-muted);
+              "
+            >
+              Pour des besoins spécifiques, le consulting nécessite en moyenne 2
+              heures de travail pour répondre à des demandes standard.
+            </p>
+          </div>
+          <div class="addon-price">
+            <div class="pack-title">Consulting</div>
+            <div class="price">120€ <span>/ heure</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="contact-section" id="contact">
+      <div class="container">
+        <div class="contact-container">
+          <div class="contact-info">
+            <h2 class="section-title" style="text-align: left">
+              Prêt à passer à la vitesse supérieure ?
+            </h2>
+            <p
+              class="section-subtitle"
+              style="text-align: left; margin-bottom: 2rem"
+            >
+              Contactez-nous pour obtenir votre licence commerciale ou pour
+              discuter de votre projet d'intégration sur-mesure.
+            </p>
+          </div>
+          <div class="contact-form-wrapper">
+            <form
+              class="contact-form"
+              onsubmit="
+                event.preventDefault();
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const company = document.getElementById('company').value;
+                const interest =
+                  document.getElementById('interest').options[
+                    document.getElementById('interest').selectedIndex
+                  ].text;
+                const message = document.getElementById('message').value;
+                const body =
+                  'Nom : ' +
+                  name +
+                  '%0AEmail : ' +
+                  email +
+                  '%0AEntreprise : ' +
+                  company +
+                  '%0ALicence : ' +
+                  interest +
+                  '%0A%0AMessage :%0A' +
+                  encodeURIComponent(message);
+                window.location.href =
+                  'mailto:contact@lpdjs.fr?subject=Demande de licence fX - ' +
+                  encodeURIComponent(company || name) +
+                  '&body=' +
+                  body;
+              "
+            >
+              <div class="form-group">
+                <label for="name">Nom complet</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  placeholder="Jean Dupont"
+                  required
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="email">Email professionnel</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="jean@entreprise.com"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label for="company">Entreprise</label>
+                  <input
+                    type="text"
+                    id="company"
+                    name="company"
+                    placeholder="Nom de l'entreprise"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="interest">Licence souhaitée</label>
+                <select id="interest" name="interest" required>
+                  <option value="startup">Startup / PME (800€/an)</option>
+                  <option value="corporate" selected>
+                    Corporate / Scale-up (2 500€/an)
+                  </option>
+                  <option value="enterprise">Enterprise (Sur devis)</option>
+                  <option value="consulting">
+                    Consulting (120€/h - Moyenne 2h)
+                  </option>
+                  <option value="other">Autre demande</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="message">Votre message</label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows="4"
+                  placeholder="Décrivez brièvement vos besoins..."
+                ></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                Envoyer la demande
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <p>&copy; 2026 fX. Tous droits réservés.</p>
+      </div>
+    </footer>
+  </body>
+</html>

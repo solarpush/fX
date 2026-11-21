@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,10 +17,10 @@ import (
 	"github.com/solarpush/fx/internal/storage"
 )
 
-const version = "1.0.0"
+const version = "2.0.0"
 
 func main() {
-	log.Printf("🚀 Starting Factur-X Server v%s", version)
+	log.Printf("🚀 Starting fX Universal Document Engine & Factur-X Server v%s", version)
 
 	// Charger la configuration
 	cfg, err := config.Load()
@@ -31,6 +32,9 @@ func main() {
 	log.Printf("  - Server: %s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("  - Storage: %s", cfg.Storage.Type)
 	log.Printf("  - Web UI (Angular): %v", cfg.WebUI.Enabled)
+	log.Printf("  - Studio Builder v2: %v", cfg.Features.StudioEnabled)
+	log.Printf("  - Render Backend mode: %s (configured workers: %d, maxBatchSize: %d)",
+		cfg.Render.Backend, cfg.Render.Workers, cfg.Render.MaxBatchSize)
 
 	// Initialiser le storage
 	ctx := context.Background()
@@ -42,12 +46,33 @@ func main() {
 
 	// Initialiser le client IA
 	aiClient := ai.NewClient(cfg.AI)
-	log.Printf("🤖 AI client initialized (Provider: %s)", cfg.AI.Provider)
+	log.Printf("🤖 AI client initialized (Provider: %s, Model: %s)", cfg.AI.Provider, cfg.AI.Model)
 
 	// Créer le handler API
 	handler, err := api.NewHandler(store, aiClient, cfg)
 	if err != nil {
 		log.Fatalf("❌ Failed to create API handler: %v", err)
+	}
+	defer func() {
+		if closeErr := handler.Close(); closeErr != nil {
+			log.Printf("⚠️ Error closing render backend: %v", closeErr)
+		}
+	}()
+
+	if engine := handler.RenderEngine(); engine != nil {
+		if backend := engine.Backend(); backend != nil {
+			stats := backend.Stats()
+			log.Printf("⚙️ Render Engine ready: backend=%s workers=%d healthy=%v",
+				stats.Name, stats.Workers, stats.Healthy)
+		}
+		if modReg := engine.Modules(); modReg != nil {
+			mods := modReg.List()
+			names := make([]string, 0, len(mods))
+			for _, m := range mods {
+				names = append(names, m.Name)
+			}
+			log.Printf("🧩 Registered Render Modules (%d): %s", len(names), strings.Join(names, ", "))
+		}
 	}
 	log.Printf("✅ API handler created")
 
@@ -85,10 +110,10 @@ func main() {
 	log.Println("🛑 Shutting down server...")
 
 	// Arrêt gracieux
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Server.ShutdownTimeout)*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Server.ShutdownTimeout)*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("❌ Server forced to shutdown: %v", err)
 	}
 

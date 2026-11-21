@@ -1,10 +1,35 @@
 <div class="dashboard">
   <header class="dashboard-header">
     <h1>Tableau de bord</h1>
-    <p>Bienvenue dans fX - Générateur Factur-X</p>
+    <p>Bienvenue dans fX v2 — Moteur documentaire universel & Factur-X</p>
   </header>
 
   <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats().studioTemplates }}</h3>
+        <p>Templates Studio v2</p>
+      </div>
+    </div>
+
     <div class="stat-card">
       <div class="stat-icon">
         <svg
@@ -27,9 +52,19 @@
       </div>
       <div class="stat-content">
         <h3>{{ stats().totalTemplates }}</h3>
-        <p>Templates</p>
+        <p>Templates Factur-X</p>
       </div>
     </div>
+
+    @if (stats().activeBackend) {
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-content">
+          <h3>{{ stats().activeBackend }}</h3>
+          <p>Moteur de rendu actif</p>
+        </div>
+      </div>
+    }
   </div>
 
   <section class="quick-actions">

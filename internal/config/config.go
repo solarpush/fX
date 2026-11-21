@@ -14,7 +14,20 @@ type Config struct {
 	AI       AIConfig
 	Auth     AuthConfig
 	Features FeaturesConfig
+	Render   RenderConfig
 	Verbose  bool
+}
+
+// RenderConfig regroupe les paramètres du moteur de rendu universel (fX v2)
+type RenderConfig struct {
+	Backend           string // "auto", "rust", "cli"
+	Workers           int    // 0 = runtime.NumCPU()
+	DaemonSocket      string // Chemin du socket Unix typst-renderd (ex: /var/run/fx-typst.sock)
+	DaemonURL         string // URL TCP du daemon typst-renderd (ex: http://127.0.0.1:9090)
+	TmpDir            string // Dossier temporaire explicite (défaut: /dev/shm/fx-render ou ./tmp/fx-render)
+	FontPaths         string // Chemins de polices supplémentaires (TYPST_FONT_PATHS)
+	IgnoreSystemFonts bool   // Ignorer les polices système (TYPST_IGNORE_SYSTEM_FONTS)
+	MaxBatchSize      int    // Nombre maximal de documents par requête batch (défaut: 100)
 }
 
 // FeaturesConfig regroupe les feature flags de l'application
@@ -22,6 +35,8 @@ type FeaturesConfig struct {
 	// AllowCustomTemplates active le mode "template Typst custom" (découplé de Factur-X):
 	// endpoints /custom/* et page d'édition dédiée côté UI.
 	AllowCustomTemplates bool
+	// StudioEnabled active l'éditeur visuel Studio v2 et l'API v2 universelle.
+	StudioEnabled bool
 }
 
 // WebUIConfig configuration de l'interface Angular servie par le backend
@@ -123,6 +138,17 @@ func Load() (*Config, error) {
 		},
 		Features: FeaturesConfig{
 			AllowCustomTemplates: getEnvAsBool("ALLOW_CUSTOM_TEMPLATES", false),
+			StudioEnabled:        getEnvAsBool("STUDIO_ENABLED", true),
+		},
+		Render: RenderConfig{
+			Backend:           getEnv("RENDER_BACKEND", "auto"),
+			Workers:           getEnvAsInt("RENDER_WORKERS", 0),
+			DaemonSocket:      getEnv("RENDER_DAEMON_SOCKET", ""),
+			DaemonURL:         getEnv("RENDER_DAEMON_URL", ""),
+			TmpDir:            getEnv("RENDER_TMP_DIR", ""),
+			FontPaths:         getEnv("RENDER_FONT_PATHS", os.Getenv("TYPST_FONT_PATHS")),
+			IgnoreSystemFonts: getEnvAsBool("TYPST_IGNORE_SYSTEM_FONTS", false),
+			MaxBatchSize:      getEnvAsInt("RENDER_MAX_BATCH_SIZE", 100),
 		},
 		Verbose: getEnvAsBool("VERBOSE", false),
 	}
@@ -161,6 +187,20 @@ func (c *Config) Validate() error {
 		// OK, pas de validation spécifique
 	default:
 		return fmt.Errorf("STORAGE_TYPE invalide: %s (valeurs: local, s3, gcs, azure)", c.Storage.Type)
+	}
+
+	// Vérifier la configuration du moteur de rendu
+	switch c.Render.Backend {
+	case "", "auto", "rust", "cli":
+		// OK
+	default:
+		return fmt.Errorf("RENDER_BACKEND invalide: %s (valeurs: auto, rust, cli)", c.Render.Backend)
+	}
+	if c.Render.Workers < 0 {
+		return fmt.Errorf("RENDER_WORKERS invalide: %d (doit être >= 0)", c.Render.Workers)
+	}
+	if c.Render.MaxBatchSize < 0 {
+		return fmt.Errorf("RENDER_MAX_BATCH_SIZE invalide: %d (doit être >= 0)", c.Render.MaxBatchSize)
 	}
 
 	return nil

@@ -1,0 +1,523 @@
+<div class="studio-root" (click)="showThemePopover.set(false); showExportMenu.set(false)">
+  <!-- TOP STUDIO CHROME BAR -->
+  <header class="studio-bar">
+    <div class="bar-left">
+      <a routerLink="/studio" class="back-btn" title="Retour à la galerie Studio">←</a>
+
+      <button
+        type="button"
+        class="pane-toggle-btn"
+        [class.active]="showLeftPanel()"
+        (click)="showLeftPanel.set(!showLeftPanel())"
+        title="Afficher / Masquer le panneau gauche (Structure · Blocs · Données)"
+      >
+        ◧
+      </button>
+
+      <input
+        type="text"
+        class="doc-title-input"
+        [ngModel]="templateName()"
+        (ngModelChange)="templateName.set($event); isDirty.set(true)"
+        placeholder="Nom du document"
+      />
+
+      <span class="kind-pill" [class.pro]="!isBlueprintKind()">
+        {{ isBlueprintKind() ? 'Blueprint' : 'Typst Pro' }}
+      </span>
+
+      @if (templateId()) {
+        <button type="button" class="ver-pill" title="Historique des versions" (click)="openVersions()">
+          v{{ templateVersion() }}
+        </button>
+      }
+
+      @if (isDirty()) {
+        <span class="dirty-dot" title="Modifications non enregistrées"></span>
+      }
+    </div>
+
+    <!-- Center: 3 Workspace Modes + 1-Click Theme Switcher -->
+    <div class="bar-center">
+      <div class="workspace-seg" role="tablist">
+        <button
+          type="button"
+          [class.active]="workspaceMode() === 'visual'"
+          [disabled]="!isBlueprintKind()"
+          (click)="setWorkspaceMode('visual')"
+        >
+          Visuel
+        </button>
+        <button
+          type="button"
+          [class.active]="workspaceMode() === 'split'"
+          [disabled]="!isBlueprintKind()"
+          (click)="setWorkspaceMode('split')"
+        >
+          Split
+        </button>
+        <button
+          type="button"
+          [class.active]="workspaceMode() === 'code'"
+          (click)="setWorkspaceMode('code')"
+        >
+          Code Pro
+        </button>
+      </div>
+
+      <!-- 1-Click Theme Switcher Pill + Popover -->
+      @if (isBlueprintKind()) {
+        <div class="popover-anchor" (click)="$event.stopPropagation()">
+          <button type="button" class="theme-trigger" (click)="toggleThemePopover()">
+            <span class="mini-swatches">
+              <i [style.background]="effectiveThemeColors().bg"></i>
+              <i [style.background]="effectiveThemeColors().primary"></i>
+              <i [style.background]="effectiveThemeColors().accent"></i>
+            </span>
+            <span class="theme-lbl">{{ activeThemeInfo().name }}</span>
+            <span class="caret">▾</span>
+          </button>
+
+          @if (showThemePopover()) {
+            <div class="theme-popover">
+              <div class="pop-title">Thèmes Design System (@fx/ui)</div>
+              <div class="pop-presets">
+                @for (t of themes(); track t.id) {
+                  <button
+                    type="button"
+                    class="pop-theme-btn"
+                    [class.active]="(blueprint().theme.preset || 'swiss-minimal') === t.id"
+                    (click)="selectQuickTheme(t.id)"
+                  >
+                    <span class="mini-swatches">
+                      <i [style.background]="t.bg"></i>
+                      <i [style.background]="t.primary"></i>
+                      <i [style.background]="t.accent"></i>
+                    </span>
+                    <span class="pt-info">
+                      <strong>{{ t.name }}</strong>
+                      <small>{{ t.fontHeading }} · {{ t.radius }}</small>
+                    </span>
+                  </button>
+                }
+              </div>
+
+              <div class="pop-divider"></div>
+              <div class="pop-title">Tokens rapides</div>
+              <div class="pop-tokens">
+                <label class="tok-pick">
+                  <span>Primary</span>
+                  <input
+                    type="color"
+                    [ngModel]="effectiveThemeColors().primary"
+                    (ngModelChange)="setQuickToken('primary', $event)"
+                  />
+                </label>
+                <label class="tok-pick">
+                  <span>Accent</span>
+                  <input
+                    type="color"
+                    [ngModel]="effectiveThemeColors().accent"
+                    (ngModelChange)="setQuickToken('accent', $event)"
+                  />
+                </label>
+                <label class="tok-pick">
+                  <span>Rayon</span>
+                  <select
+                    class="pop-sel"
+                    [ngModel]="blueprint().theme.overrides?.radius || activeThemeInfo().radius"
+                    (ngModelChange)="setQuickToken('radius', $event)"
+                  >
+                    <option value="0pt">0pt</option>
+                    <option value="2pt">2pt</option>
+                    <option value="4pt">4pt</option>
+                    <option value="8pt">8pt</option>
+                  </select>
+                </label>
+                <label class="tok-pick">
+                  <span>Densité</span>
+                  <select
+                    class="pop-sel"
+                    [ngModel]="blueprint().theme.overrides?.density || activeThemeInfo().density"
+                    (ngModelChange)="setQuickToken('density', $event)"
+                  >
+                    <option value="compact">Compact</option>
+                    <option value="comfortable">Normal</option>
+                    <option value="relaxed">Aéré</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Right: History, Eject, AI, API, Export, Inspector Toggle, Save -->
+    <div class="bar-right">
+      <div class="undo-group">
+        <button type="button" class="tool-btn" [disabled]="!canUndo()" title="Annuler (Ctrl+Z)" (click)="undo()">
+          ↩
+        </button>
+        <button type="button" class="tool-btn" [disabled]="!canRedo()" title="Rétablir (Ctrl+Shift+Z)" (click)="redo()">
+          ↪
+        </button>
+      </div>
+
+      @if (isBlueprintKind()) {
+        <button
+          type="button"
+          class="tool-btn"
+          title="Convertir en code Typst natif libre"
+          (click)="showEjectModal.set(true)"
+        >
+          ⏏ Eject
+        </button>
+      }
+
+      <button
+        type="button"
+        class="tool-btn ai-btn"
+        [class.active]="showAiDrawer()"
+        (click)="showAiDrawer.set(!showAiDrawer())"
+      >
+        ✦ Co-pilote IA
+      </button>
+
+      <button type="button" class="tool-btn" (click)="showApiModal.set(true)">
+        &lt;/&gt; API
+      </button>
+
+      <!-- Export Dropdown -->
+      <div class="popover-anchor" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="tool-btn"
+          [disabled]="isExporting()"
+          (click)="showThemePopover.set(false); showExportMenu.set(!showExportMenu())"
+        >
+          {{ isExporting() ? 'Export…' : '⬇ Exporter ▾' }}
+        </button>
+
+        @if (showExportMenu()) {
+          <div class="export-menu">
+            <button type="button" (click)="exportAs('pdf')">📄 Télécharger PDF</button>
+            <button type="button" (click)="exportAs('pdf-a3b')">🏛 Télécharger PDF/A-3b</button>
+            <button type="button" (click)="exportAs('png')">🖼 Télécharger PNG</button>
+            <button type="button" (click)="exportAs('svg')">✦ Télécharger SVG</button>
+            <div class="menu-sep"></div>
+            <button type="button" (click)="exportAs('typ')">📝 Source Typst (.typ)</button>
+            @if (isBlueprintKind()) {
+              <button type="button" (click)="exportAs('json')">&#123;&#125; Blueprint (.json)</button>
+            }
+          </div>
+        }
+      </div>
+
+      @if (workspaceMode() === 'visual') {
+        <button
+          type="button"
+          class="pane-toggle-btn"
+          [class.active]="showInspector()"
+          (click)="showInspector.set(!showInspector())"
+          title="Afficher / Masquer l’inspecteur droit"
+        >
+          ◨
+        </button>
+      }
+
+      <button
+        type="button"
+        class="save-btn"
+        [disabled]="isSaving()"
+        (click)="saveTemplate()"
+        title="Enregistrer (Ctrl+S)"
+      >
+        {{ isSaving() ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- TRUE 3-PANEL FRAMER / FIGMA WORKSPACE -->
+  <div class="studio-workspace" [attr.data-mode]="workspaceMode()">
+    <!-- 1. LEFT SIDEBAR (272px, collapsible): Structure | Blocs | Données -->
+    @if (showLeftPanel()) {
+      <div class="pane pane-left">
+        <app-block-palette
+          [blueprint]="blueprint()"
+          [blockTypes]="blockTypes()"
+          [selectedBlockId]="selectedBlockId()"
+          [schemaText]="schemaText()"
+          [sampleDataText]="sampleDataText()"
+          [connectedDropLists]="allDropListIds()"
+          [workspaceMode]="workspaceMode()"
+          (addBlock)="onPaletteAddBlock($event)"
+          (addBlockAt)="onCanvasAddBlockAt($event)"
+          (moveBlock)="onCanvasMoveBlock($event)"
+          (selectBlock)="selectedBlockId.set($event)"
+          (duplicateBlock)="onDuplicateBlock($event)"
+          (deleteBlock)="onDeleteBlock($event)"
+          (nudgeBlock)="onNudgeBlock($event)"
+          (insertSchemaPath)="onInsertSchemaPath($event)"
+          (schemaInferred)="onSchemaInferred($event)"
+          (sampleDataQuickChange)="onSampleDataQuickChange($event)"
+          (openDataEditor)="showDataModal.set(true)"
+        />
+      </div>
+    }
+
+    <!-- CODE PRO MODE: Pro Code Editor on LEFT -->
+    @if (workspaceMode() === 'code') {
+      <div class="pane pane-code-pro">
+        <app-pro-code-editor
+          [code]="isBlueprintKind() ? (compiledTypst() || typstCode()) : typstCode()"
+          [readonly]="isBlueprintKind()"
+          [title]="isBlueprintKind() ? 'compiled.typ (cliquez Eject pour éditer)' : 'template.typ'"
+          [diagnostics]="diagnostics()"
+          [schemaPaths]="schemaPaths()"
+          [insertRequest]="codeInsertReq()"
+          (codeChange)="onProCodeChange($event)"
+        />
+      </div>
+    }
+
+    <!-- 2. CENTER STAGE (1fr — THE INTERACTIVE DOCUMENT PAGE ITSELF!) -->
+    <div class="pane pane-stage">
+      <app-vector-preview
+        [pagesSvg]="pagesSvg()"
+        [layoutBoxes]="layoutBoxes()"
+        [pdfBase64]="pdfBase64()"
+        [pdfBlob]="pdfBlob()"
+        [mode]="previewMode()"
+        [dataPreviewMode]="dataPreviewMode()"
+        [isCompiling]="isCompiling()"
+        [durationMs]="compileDurationMs()"
+        [backendName]="compileBackend()"
+        [transport]="previewTransport()"
+        [errorMessage]="compileError()"
+        [diagnostics]="diagnostics()"
+        [blueprint]="isBlueprintKind() ? blueprint() : null"
+        [selectedBlockId]="selectedBlockId()"
+        [blockTypes]="blockTypes()"
+        (modeChange)="onPreviewModeChange($event)"
+        (dataPreviewModeChange)="onDataPreviewModeChange($event)"
+        (openDataModal)="showDataModal.set(true)"
+        (refreshRequested)="schedulePreview(10)"
+        (blockSelected)="selectedBlockId.set($event)"
+        (nudgeBlock)="onNudgeBlock($event)"
+        (duplicateBlock)="onDuplicateBlock($event)"
+        (deleteBlock)="onDeleteBlock($event)"
+        (insertBlockAfter)="onInsertBlockAfter($event)"
+        (dropPaletteBlock)="onPaletteAddBlock($event)"
+        (fixWithAi)="openAiFixFromPreview()"
+      />
+    </div>
+
+    <!-- SPLIT MODE: Live Compiled Typst Pro Code Editor on RIGHT -->
+    @if (workspaceMode() === 'split') {
+      <div class="pane pane-code-split">
+        <app-pro-code-editor
+          [code]="compiledTypst() || '// Compilation en cours…'"
+          [readonly]="true"
+          title="compiled.typ (auto)"
+          [diagnostics]="diagnostics()"
+          [schemaPaths]="schemaPaths()"
+        />
+      </div>
+    }
+
+    <!-- 3. RIGHT INSPECTOR PANEL (348px, Visual mode): Contenu | Style | Conditions / Thème | Page | Modules -->
+    @if (workspaceMode() === 'visual' && showInspector()) {
+      <div class="pane pane-inspector">
+        <app-block-inspector
+          [blueprint]="blueprint()"
+          [selectedBlock]="selectedBlock()"
+          [themes]="themes()"
+          [fonts]="fonts()"
+          [schemaNodes]="schemaTreeNodes()"
+          [schemaPaths]="schemaPaths()"
+          [availableModules]="availableModules()"
+          [activeModules]="activeModules()"
+          (blockChange)="onBlockUpdated($event)"
+          (selectBlock)="selectedBlockId.set($event)"
+          (duplicateBlock)="onDuplicateBlock($event)"
+          (deleteBlock)="onDeleteBlock($event)"
+          (themeChange)="onThemeChange($event)"
+          (pageChange)="onPageChange($event)"
+          (headerFooterChange)="onHeaderFooterChange($event)"
+          (modulesChange)="onModulesChange($event)"
+        />
+      </div>
+    }
+
+    <!-- Docked Right AI Co-pilot v2 Drawer -->
+    @if (showAiDrawer()) {
+      <app-ai-copilot-drawer
+        [workspaceMode]="workspaceMode()"
+        [isBlueprintKind]="isBlueprintKind()"
+        [currentBlueprint]="isBlueprintKind() ? blueprint() : null"
+        [currentTypst]="isBlueprintKind() ? compiledTypst() : typstCode()"
+        [schemaText]="schemaText()"
+        [sampleDataText]="sampleDataText()"
+        [diagnostics]="diagnostics()"
+        [compileError]="compileError()"
+        [prefillPrompt]="aiPrefillPrompt()"
+        (closeDrawer)="showAiDrawer.set(false)"
+        (applyStudioResult)="onAiResultApplied($event)"
+        (undoAiSnapshot)="onAiUndoSnapshot($event)"
+        (applyGeneratedSchema)="onSchemaInferred($event)"
+      />
+    }
+  </div>
+
+  <!-- Toast Notification -->
+  @if (toast(); as t) {
+    <div class="studio-toast" [attr.data-kind]="t.kind">{{ t.text }}</div>
+  }
+</div>
+
+<!-- MODAL: UTILISER VIA API -->
+@if (showApiModal()) {
+  <div class="modal-backdrop" (click)="showApiModal.set(false)">
+    <div class="modal-panel wide" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3>Utiliser ce document via l’API fX v2</h3>
+          <p>Rendez ce modèle en PDF, PDF/A-3b, SVG, PNG ou Factur-X par un simple appel HTTP.</p>
+        </div>
+        <button type="button" class="close-x" (click)="showApiModal.set(false)">×</button>
+      </div>
+
+      <div class="api-controls">
+        <div class="seg-row">
+          @for (f of ['pdf', 'pdf-a3b', 'svg', 'png', 'facturx']; track f) {
+            <button
+              type="button"
+              [class.active]="apiSnippetFormat() === f"
+              (click)="apiSnippetFormat.set($any(f))"
+            >
+              {{ f === 'facturx' ? 'Factur-X EN16931' : f.toUpperCase() }}
+            </button>
+          }
+        </div>
+        <div class="seg-row">
+          <button type="button" [class.active]="apiSnippetLang() === 'curl'" (click)="apiSnippetLang.set('curl')">cURL</button>
+          <button type="button" [class.active]="apiSnippetLang() === 'ts'" (click)="apiSnippetLang.set('ts')">TypeScript</button>
+        </div>
+      </div>
+
+      <pre class="code-modal-pre">{{ apiSnippetCode() }}</pre>
+
+      <div class="modal-foot">
+        <button type="button" class="tool-btn" (click)="showApiModal.set(false)">Fermer</button>
+        <button type="button" class="save-btn" (click)="copyApiSnippet()">
+          {{ apiCopied() ? '✓ Snippet copié' : 'Copier le snippet' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: EJECT TO TYPST -->
+@if (showEjectModal()) {
+  <div class="modal-backdrop" (click)="showEjectModal.set(false)">
+    <div class="modal-panel" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3>Ejecter vers Typst natif (Code Pro)</h3>
+          <p>Cette action convertit le Blueprint visuel en code Typst libre basé sur <code>/_fx/ui.typ</code>.</p>
+        </div>
+        <button type="button" class="close-x" (click)="showEjectModal.set(false)">×</button>
+      </div>
+      <p class="modal-desc">
+        Vous conserverez 100 % du rendu actuel et pourrez éditer librement chaque ligne de Typst, tout en gardant le Co-pilote IA Auto-Fix et le rendu temps réel. L’édition par blocs visuels ne sera plus active pour ce document.
+      </p>
+      <div class="modal-foot">
+        <button type="button" class="tool-btn" (click)="showEjectModal.set(false)">Annuler</button>
+        <button type="button" class="save-btn" (click)="confirmEjectToTypst()">
+          ⏏ Convertir en Typst Pro
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: SAMPLE DATA & JSON SCHEMA EDITOR -->
+@if (showDataModal()) {
+  <div class="modal-backdrop" (click)="showDataModal.set(false)">
+    <div class="modal-panel wide" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3>Données d’aperçu &amp; JSON Schema</h3>
+          <p>Modifiez le payload JSON injecté dans le rendu temps réel ou le contrat JSON Schema.</p>
+        </div>
+        <button type="button" class="close-x" (click)="showDataModal.set(false)">×</button>
+      </div>
+
+      <div class="seg-row">
+        <button type="button" [class.active]="dataModalTab() === 'sample'" (click)="dataModalTab.set('sample')">
+          Données de test (sampleData.json)
+        </button>
+        <button type="button" [class.active]="dataModalTab() === 'schema'" (click)="dataModalTab.set('schema')">
+          JSON Schema (schema.json)
+        </button>
+      </div>
+
+      @if (dataModalTab() === 'sample') {
+        <textarea
+          class="json-editor-area"
+          rows="16"
+          spellcheck="false"
+          [ngModel]="sampleDataText()"
+          (ngModelChange)="sampleDataText.set($event)"
+        ></textarea>
+      } @else {
+        <textarea
+          class="json-editor-area"
+          rows="16"
+          spellcheck="false"
+          [ngModel]="schemaText()"
+          (ngModelChange)="schemaText.set($event)"
+        ></textarea>
+      }
+
+      <div class="modal-foot">
+        <button type="button" class="tool-btn" (click)="showDataModal.set(false)">Annuler</button>
+        <button type="button" class="save-btn" (click)="applyDataModalChanges()">
+          Appliquer &amp; Recompiler
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: VERSION HISTORY -->
+@if (showVersionsModal()) {
+  <div class="modal-backdrop" (click)="showVersionsModal.set(false)">
+    <div class="modal-panel" (click)="$event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3>Historique des versions</h3>
+          <p>Instantanés enregistrés pour {{ templateName() }}</p>
+        </div>
+        <button type="button" class="close-x" (click)="showVersionsModal.set(false)">×</button>
+      </div>
+      <div class="versions-list">
+        @for (v of versions(); track v.version) {
+          <div class="ver-row">
+            <span class="ver-badge">v{{ v.version }}</span>
+            <div class="ver-info">
+              <strong>{{ v.summary || v.kind }}</strong>
+              <small>{{ v.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+            </div>
+          </div>
+        } @empty {
+          <p class="modal-desc">Aucun historique de version disponible.</p>
+        }
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="tool-btn" (click)="showVersionsModal.set(false)">Fermer</button>
+      </div>
+    </div>
+  </div>
+}

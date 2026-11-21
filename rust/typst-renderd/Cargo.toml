@@ -1,0 +1,40 @@
+[package]
+name = "typst-renderd"
+version = "0.1.0"
+edition = "2021"
+description = "Persistent high-performance in-memory Typst rendering daemon for fX"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "typst-renderd"
+path = "src/main.rs"
+
+[dependencies]
+# Typst 0.15.1 compiler & exporters (matching the fX Typst 0.15 runtime)
+typst = "0.15.1"
+typst-layout = "0.15.1"
+typst-pdf = "0.15.1"
+typst-svg = "0.15.1"
+typst-render = "0.15.1"
+typst-kit = { version = "0.15.1", default-features = false, features = ["scan-fonts", "embedded-fonts"] }
+comemo = "0.5"
+
+# HTTP / Unix socket server & async runtime
+# Axum 0.8 natively implements `axum::serve::Listener` for both `TcpListener` and `UnixListener`.
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+
+# Serialization, CLI, logging, time
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+clap = { version = "4", features = ["derive", "env"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

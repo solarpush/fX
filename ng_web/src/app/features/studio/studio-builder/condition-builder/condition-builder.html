@@ -1,0 +1,123 @@
+<div class="cb-shell">
+  <div class="cb-top">
+    <div class="cb-seg">
+      <button type="button" [class.active]="mode() === 'visual'" (click)="mode.set('visual')">
+        Constructeur visuel
+      </button>
+      <button type="button" [class.active]="mode() === 'raw'" (click)="mode.set('raw')">
+        Expression libre
+      </button>
+    </div>
+
+    @if (value()) {
+      <button type="button" class="cb-clear" (click)="clearCondition()">Effacer</button>
+    }
+  </div>
+
+  @if (mode() === 'visual') {
+    <div class="cb-form">
+      <label class="cb-fld">
+        <span>Champ à tester</span>
+        <select
+          class="cb-inp mono"
+          [ngModel]="field()"
+          (ngModelChange)="onFieldChange($event)"
+        >
+          <option value="">— Toujours afficher (aucune condition) —</option>
+          @if (hasCustomField()) {
+            <option [value]="field()">{{ field() }} (personnalisé)</option>
+          }
+          @for (grp of groupedFieldOptions(); track grp.group) {
+            <optgroup [label]="grp.group">
+              @for (opt of grp.items; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </optgroup>
+          }
+        </select>
+      </label>
+
+      @if (field()) {
+        <label class="cb-fld">
+          <span>Opérateur</span>
+          <select
+            class="cb-inp"
+            [ngModel]="op()"
+            (ngModelChange)="onOpChange($event)"
+          >
+            @for (o of operators; track o.value) {
+              <option [value]="o.value">{{ o.label }}</option>
+            }
+          </select>
+        </label>
+
+        @if (needsRhs()) {
+          <div class="cb-fld">
+            <span>Valeur ou autre champ</span>
+            <div class="cb-rhs-row">
+              <input
+                type="text"
+                class="cb-inp mono"
+                [placeholder]="op() === '>' || op() === '<' ? 'ex: 0 ou champ' : 'ex: 381 ou autre.champ'"
+                [ngModel]="rhs()"
+                (ngModelChange)="onRhsInput($event)"
+              />
+              <app-variable-picker
+                [schemaNodes]="schemaNodes()"
+                [localRepeatPath]="localRepeatPath()"
+                [fieldOnly]="true"
+                buttonTitle="Comparer avec un autre champ du schéma"
+                (picked)="onRhsFieldPicked($event)"
+              />
+            </div>
+            @if (rhs().trim()) {
+              <div class="cb-hint">
+                @if (rhsIsField()) {
+                  Comparé au champ <code>{{ rhs() }}</code>
+                } @else {
+                  Comparé à la valeur littérale <code>{{ rhs() }}</code>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <div class="cb-form">
+      <label class="cb-fld">
+        <span>Expression Blueprint (visibleIf)</span>
+        <div class="cb-rhs-row">
+          <input
+            type="text"
+            class="cb-inp mono"
+            placeholder="ex: totals.amount_due != totals.total_incl_vat"
+            [ngModel]="value()"
+            (ngModelChange)="onRawChange($event)"
+          />
+          <app-variable-picker
+            [schemaNodes]="schemaNodes()"
+            [localRepeatPath]="localRepeatPath()"
+            [fieldOnly]="true"
+            buttonTitle="Insérer un champ du schéma"
+            (picked)="onRawChange(value() ? value() + ' ' + $event : $event)"
+          />
+        </div>
+      </label>
+      <div class="cb-hint">
+        Exemples : <code>invoice.note</code>, <code>!buyer.vat_id</code>, <code>invoice.type == "381"</code>, <code>totals.amount_due &gt; 0</code>
+      </div>
+    </div>
+  }
+
+  @if (value()) {
+    <div class="cb-preview">
+      <span class="cb-badge">IF</span>
+      <code>{{ value() }}</code>
+    </div>
+  } @else {
+    <div class="cb-always">
+      Ce bloc s’affiche systématiquement dans le document final.
+    </div>
+  }
+</div>

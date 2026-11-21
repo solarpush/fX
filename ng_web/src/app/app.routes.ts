@@ -20,6 +20,36 @@ export const routes: Routes = [
     title: 'Dashboard - fX',
   },
 
+  // Studio Builder v2 routes
+  {
+    path: 'studio',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/studio/studio-list/studio-list').then((m) => m.StudioListComponent),
+        title: 'Studio v2 - fX',
+      },
+      {
+        path: 'new',
+        loadComponent: () =>
+          import('./features/studio/studio-builder/studio-builder').then(
+            (m) => m.StudioBuilderComponent,
+          ),
+        title: 'Nouveau document Studio - fX',
+      },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./features/studio/studio-builder/studio-builder').then(
+            (m) => m.StudioBuilderComponent,
+          ),
+        title: 'Éditeur Studio v2 - fX',
+      },
+    ],
+  },
+
   // Template routes
   {
     path: 'templates',

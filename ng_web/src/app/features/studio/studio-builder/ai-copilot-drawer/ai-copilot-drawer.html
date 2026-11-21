@@ -1,0 +1,222 @@
+<aside class="copilot-shell">
+  <div class="copilot-head">
+    <div class="head-title">
+      <span class="spark-badge">✦</span>
+      <div>
+        <h3>Co-pilote IA v2</h3>
+        <span class="sub">Patch Blueprint · Auto-Fix Typst · Vision</span>
+      </div>
+    </div>
+    <button type="button" class="close-btn" (click)="closeDrawer.emit()" title="Fermer">×</button>
+  </div>
+
+  <!-- Tabs: Design vs Schema -->
+  <div class="copilot-tabs">
+    <button
+      type="button"
+      [class.active]="activeTab() === 'design'"
+      (click)="activeTab.set('design')"
+    >
+      ✦ Design & Code
+    </button>
+    <button
+      type="button"
+      [class.active]="activeTab() === 'schema'"
+      (click)="activeTab.set('schema')"
+    >
+      &#123;&#125; Générer un schéma
+    </button>
+  </div>
+
+  <!-- TAB 1: DESIGN & AUTO-FIX -->
+  @if (activeTab() === 'design') {
+    <div class="copilot-body">
+      <div class="mode-row">
+        <span class="mode-lbl">Mode IA</span>
+        <div class="mode-pills">
+          <button type="button" [class.active]="aiMode() === 'auto'" (click)="aiMode.set('auto')">Auto</button>
+          <button type="button" [class.active]="aiMode() === 'blueprint'" [disabled]="!isBlueprintKind()" (click)="aiMode.set('blueprint')">Blueprint</button>
+          <button type="button" [class.active]="aiMode() === 'typst'" (click)="aiMode.set('typst')">Typst Natif</button>
+        </div>
+      </div>
+
+      <!-- Quick Prompt Chips -->
+      <div class="chips-block">
+        <div class="micro-lbl">Suggestions rapides</div>
+        <div class="chips-list">
+          @for (chip of quickPrompts(); track chip) {
+            <button type="button" class="prompt-chip" (click)="setPromptChip(chip)">
+              {{ chip }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Multimodal Reference Image Upload -->
+      <div class="vision-box">
+        @if (referenceImage(); as img) {
+          <div class="img-preview-row">
+            <img [src]="img" alt="Image de référence" class="ref-thumb" />
+            <div class="ref-meta">
+              <span class="ref-name">{{ referenceImageName() || 'Image de référence' }}</span>
+              <span class="ref-hint">Vision multimodale active</span>
+            </div>
+            <button type="button" class="del-img" (click)="clearReferenceImage()">×</button>
+          </div>
+        } @else {
+          <label class="upload-trigger">
+            <input type="file" accept="image/*" hidden (change)="onReferenceFileSelected($event)" />
+            <span>🖼 Joindre une image de référence (maquette, facture, capture…)</span>
+          </label>
+        }
+      </div>
+
+      <!-- Prompt Input -->
+      <div class="prompt-box">
+        <textarea
+          class="prompt-input"
+          rows="4"
+          placeholder="Décrivez votre modification ou mise en page… (Ctrl+Entrée pour envoyer)"
+          [ngModel]="prompt()"
+          (ngModelChange)="prompt.set($event)"
+          (keydown)="onPromptKeydown($event)"
+        ></textarea>
+        <button
+          type="button"
+          class="send-btn"
+          [disabled]="isGenerating() || (!prompt().trim() && !referenceImage())"
+          (click)="runDesignGenerate()"
+        >
+          @if (isGenerating()) {
+            <span class="dot-spin"></span>
+            Compilation & Vérification IA…
+          } @else {
+            ✦ Générer / Appliquer
+          }
+        </button>
+      </div>
+
+      @if (errorMsg()) {
+        <div class="err-box">{{ errorMsg() }}</div>
+      }
+
+      <!-- History & Undo -->
+      <div class="history-list">
+        @for (turn of history(); track turn.id) {
+          <div class="turn-card" [class.undone]="turn.undone">
+            <div class="turn-prompt">
+              <span>« {{ turn.prompt }} »</span>
+              @if (turn.hasImage) {
+                <span class="img-pill">🖼 Vision</span>
+              }
+            </div>
+
+            <div class="turn-status-row">
+              <span
+                class="status-pill"
+                [class.ok-first]="turn.result.compileSuccess && turn.result.attempts <= 1"
+                [class.ok-fixed]="turn.result.compileSuccess && turn.result.attempts > 1"
+                [class.failed]="!turn.result.compileSuccess"
+              >
+                {{ statusLabel(turn.result) }}
+              </span>
+              @if (turn.result.patches?.length) {
+                <span class="meta-pill">{{ turn.result.patches!.length }} patch(es)</span>
+              }
+            </div>
+
+            @if (turn.result.explanation) {
+              <p class="turn-expl">{{ turn.result.explanation }}</p>
+            }
+
+            @if (turn.result.warnings?.length) {
+              <div class="turn-warn">
+                @for (w of turn.result.warnings!; track $index) {
+                  <div>⚠ {{ w }}</div>
+                }
+              </div>
+            }
+
+            @if (turn.result.compileErrors?.length) {
+              <div class="turn-err">
+                @for (ce of turn.result.compileErrors!; track $index) {
+                  <div>{{ ce }}</div>
+                }
+              </div>
+            }
+
+            <div class="turn-foot">
+              @if (!turn.undone) {
+                <button type="button" class="undo-btn" (click)="undoTurn(turn)">
+                  ↩ Annuler cette modification IA
+                </button>
+              } @else {
+                <span class="undone-lbl">✓ Modification annulée</span>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-history">
+            Le Co-pilote v2 compile et vérifie automatiquement chaque proposition côté serveur avant de l’appliquer.
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB 2: AI SCHEMA GENERATOR -->
+  @if (activeTab() === 'schema') {
+    <div class="copilot-body">
+      <p class="schema-intro">
+        Décrivez votre métier ou document cible : l’IA génère un <strong>JSON Schema Draft-7</strong> propre accompagné de données réalistes prêtes pour l’aperçu.
+      </p>
+
+      <div class="chips-list">
+        @for (sp of schemaQuickPrompts; track sp) {
+          <button type="button" class="prompt-chip" (click)="schemaPrompt.set(sp)">
+            {{ sp }}
+          </button>
+        }
+      </div>
+
+      <textarea
+        class="prompt-input"
+        rows="4"
+        placeholder="Ex : Attestation d’assurance habitation avec assuré, bien couvert, garanties et dates de validité…"
+        [ngModel]="schemaPrompt()"
+        (ngModelChange)="schemaPrompt.set($event)"
+      ></textarea>
+
+      <button
+        type="button"
+        class="send-btn"
+        [disabled]="isGeneratingSchema() || (!schemaPrompt().trim() && !referenceImage())"
+        (click)="runSchemaGenerate()"
+      >
+        {{ isGeneratingSchema() ? 'Génération du schéma…' : '✦ Générer le schéma & les données' }}
+      </button>
+
+      @if (schemaError()) {
+        <div class="err-box">{{ schemaError() }}</div>
+      }
+
+      @if (schemaResult(); as sres) {
+        <div class="schema-result-card">
+          <div class="turn-status-row">
+            <span class="status-pill ok-first">✓ Schéma validé ({{ sres.attempts }} passe(s))</span>
+            <button type="button" class="apply-schema-btn" (click)="applySchemaSuggestion()">
+              Appliquer au document
+            </button>
+          </div>
+          @if (sres.explanation) {
+            <p class="turn-expl">{{ sres.explanation }}</p>
+          }
+          <div class="micro-lbl">JSON Schema généré</div>
+          <pre class="json-pre">{{ prettyJson(sres.schema) }}</pre>
+          <div class="micro-lbl">Données d’exemple générées</div>
+          <pre class="json-pre">{{ prettyJson(sres.sampleData) }}</pre>
+        </div>
+      }
+    </div>
+  }
+</aside>

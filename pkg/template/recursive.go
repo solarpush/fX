@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -17,6 +18,29 @@ const maxRenderDepth = 256
 // orphanTagRegex nettoie les balises de bloc/commentaire orphelines résiduelles.
 var orphanTagRegex = regexp.MustCompile(`\{\{[#/!][^}]*\}\}|\{\{\s*else\s*\}\}`)
 
+// ExtractedAsset représente un fichier binaire extrait lors du rendu
+// (ex: image base64 extraite en asset fichier plutôt qu'en littéral Typst
+// bytes((...)) géant).
+type ExtractedAsset struct {
+	Name string
+	Data []byte
+}
+
+type assetCollector struct {
+	items []ExtractedAsset
+}
+
+func (a *assetCollector) add(raw []byte) string {
+	idx := len(a.items) + 1
+	ext := sniffAssetExtension(raw)
+	name := fmt.Sprintf("assets/_inline_%d%s", idx, ext)
+	a.items = append(a.items, ExtractedAsset{
+		Name: name,
+		Data: raw,
+	})
+	return name
+}
+
 // renderCtx représente le contexte de données courant lors du rendu, avec un
 // lien vers le contexte parent (boucle englobante) et la racine. La résolution
 // d'un chemin remonte la chaîne des parents puis retombe sur la racine, ce qui
@@ -25,6 +49,7 @@ type renderCtx struct {
 	data   interface{}
 	parent *renderCtx
 	root   interface{}
+	assets *assetCollector
 }
 
 // RenderRecursive rend un template de type Handlebars (variables, {{#each}},
@@ -33,20 +58,44 @@ type renderCtx struct {
 // Engine (spécifique Factur-X), ce moteur n'applique aucun formatage métier
 // (pas d'heuristique de montant à 2 décimales) : il est générique.
 func RenderRecursive(templateContent string, jsonData []byte) (string, error) {
+	out, _, err := renderRecursiveInternal(templateContent, jsonData, false)
+	return out, err
+}
+
+// RenderRecursiveWithAssets rend un template Handlebars contre des données JSON
+// tout en extrayant les binaires base64 rencontrés via {{bytes ...}} dans des
+// ExtractedAsset (ex: "assets/_inline_1.png") et en émettant
+// `read("/assets/_inline_1.png", encoding: none)` au lieu d'un littéral
+// `bytes((...))` massif. Si la valeur n'est pas un base64 valide (ex: mock),
+// `none` est toujours émis sans créer d'asset.
+func RenderRecursiveWithAssets(templateContent string, jsonData []byte) (string, []ExtractedAsset, error) {
+	return renderRecursiveInternal(templateContent, jsonData, true)
+}
+
+func renderRecursiveInternal(templateContent string, jsonData []byte, extractAssets bool) (string, []ExtractedAsset, error) {
 	var data map[string]interface{}
 	if err := json.Unmarshal(jsonData, &data); err != nil {
-		return "", fmt.Errorf("erreur parsing JSON: %w", err)
+		return "", nil, fmt.Errorf("erreur parsing JSON: %w", err)
 	}
 
-	root := &renderCtx{data: data, parent: nil, root: data}
+	var collector *assetCollector
+	if extractAssets {
+		collector = &assetCollector{}
+	}
+
+	root := &renderCtx{data: data, parent: nil, root: data, assets: collector}
 	out, err := renderNodes(templateContent, root, 0)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// Filet de sécurité : retirer d'éventuelles balises orphelines pour ne pas
 	// casser la compilation Typst.
-	return orphanTagRegex.ReplaceAllString(out, ""), nil
+	rendered := orphanTagRegex.ReplaceAllString(out, "")
+	if collector != nil {
+		return rendered, collector.items, nil
+	}
+	return rendered, nil, nil
 }
 
 // renderNodes parcourt le template en repérant chaque balise {{...}} et rend
@@ -86,7 +135,7 @@ func renderNodes(tmpl string, ctx *renderCtx, depth int) (string, error) {
 			}
 			if arr, ok := ctx.resolve(name).([]interface{}); ok {
 				for _, item := range arr {
-					child := &renderCtx{data: item, parent: ctx, root: ctx.root}
+					child := &renderCtx{data: item, parent: ctx, root: ctx.root, assets: ctx.assets}
 					rendered, err := renderNodes(inner, child, depth+1)
 					if err != nil {
 						return "", err
@@ -314,18 +363,19 @@ func parseHelper(tag string) (name, arg string, ok bool) {
 func renderHelper(name, arg string, ctx *renderCtx) string {
 	switch name {
 	case "bytes":
-		return bytesHelper(ctx.resolve(arg))
+		return bytesHelper(ctx.resolve(arg), ctx.assets)
 	default:
 		return ""
 	}
 }
 
 // bytesHelper convertit une valeur base64 (image ou binaire quelconque passé « à
-// la volée » dans les données) en littéral Typst `bytes((...))`, rendu en mémoire
-// sans fichier intermédiaire. Utilisation : `#image({{bytes logo}}, width: 100%)`.
+// la volée » dans les données) soit en référence d'asset extrait
+// `read("/assets/_inline_N.<ext>", encoding: none)` lorsqu'un collecteur
+// d'assets est actif, soit en littéral Typst `bytes((...))` en mode inline.
 // Si la valeur n'est pas un base64 décodable (ex: mock d'aperçu), retourne `none`
 // pour que le template puisse retomber sur un placeholder (`#if img != none`).
-func bytesHelper(value interface{}) string {
+func bytesHelper(value interface{}, assets *assetCollector) string {
 	s, ok := value.(string)
 	if !ok || strings.TrimSpace(s) == "" {
 		return "none"
@@ -333,6 +383,11 @@ func bytesHelper(value interface{}) string {
 	raw, err := decodeBase64Loose(s)
 	if err != nil || len(raw) == 0 {
 		return "none"
+	}
+
+	if assets != nil {
+		name := assets.add(raw)
+		return fmt.Sprintf(`read("/%s", encoding: none)`, name)
 	}
 
 	var sb strings.Builder
@@ -348,8 +403,31 @@ func bytesHelper(value interface{}) string {
 	return sb.String()
 }
 
-// decodeBase64Loose décode une chaîne base64 en tolérant un préfixe data URI et
-// plusieurs variantes d'encodage (standard/URL, avec ou sans padding).
+// sniffAssetExtension déduit l'extension de fichier à partir des magic bytes
+// binaires (PNG, JPEG, WebP, GIF, SVG), ou ".bin" par défaut.
+func sniffAssetExtension(raw []byte) string {
+	if len(raw) >= 8 && bytes.Equal(raw[:8], []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}) {
+		return ".png"
+	}
+	if len(raw) >= 3 && raw[0] == 0xFF && raw[1] == 0xD8 && raw[2] == 0xFF {
+		return ".jpg"
+	}
+	if len(raw) >= 12 && bytes.Equal(raw[:4], []byte("RIFF")) && bytes.Equal(raw[8:12], []byte("WEBP")) {
+		return ".webp"
+	}
+	if len(raw) >= 6 && (bytes.HasPrefix(raw, []byte("GIF87a")) || bytes.HasPrefix(raw, []byte("GIF89a"))) {
+		return ".gif"
+	}
+	trimmed := bytes.TrimLeft(raw, " \t\r\n\xef\xbb\xbf")
+	if bytes.HasPrefix(trimmed, []byte("<svg")) || (bytes.HasPrefix(trimmed, []byte("<?xml")) && bytes.Contains(trimmed, []byte("<svg"))) {
+		return ".svg"
+	}
+	return ".bin"
+}
+
+// decodeBase64Loose décode une chaîne base64 en tolérant un préfixe data URI,
+// des retours à la ligne MIME, et plusieurs variantes d'encodage (standard/URL,
+// avec ou sans padding).
 func decodeBase64Loose(data string) ([]byte, error) {
 	data = strings.TrimSpace(data)
 	if strings.HasPrefix(data, "data:") {
@@ -357,6 +435,7 @@ func decodeBase64Loose(data string) ([]byte, error) {
 			data = data[i+1:]
 		}
 	}
+	data = strings.NewReplacer("\r", "", "\n", "").Replace(data)
 	for _, enc := range []*base64.Encoding{
 		base64.StdEncoding,
 		base64.RawStdEncoding,
