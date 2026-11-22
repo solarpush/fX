@@ -198,11 +198,12 @@
 
 .theme-list { display: flex; flex-direction: column; gap: 6px; }
 .theme-card {
-  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px;
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px;
   background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07);
   text-align: left; color: #e2e8f0; transition: all 0.14s;
   &:hover { border-color: rgba(99, 102, 241, 0.45); }
   &.active { background: rgba(99, 102, 241, 0.16); border-color: #6366f1; }
+  &.custom-theme-card { border-color: rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.09); }
 }
 .swatches { display: flex; gap: 3px; flex-shrink: 0; }
 .sw { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.2); }

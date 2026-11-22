@@ -1017,7 +1017,12 @@
         <span class="head-glyph">✦</span>
         <div class="head-titles">
           <div class="insp-title">Document &amp; Design System</div>
-          <div class="insp-id">Thème : {{ activeThemePreset().name }}</div>
+          <div class="insp-id">
+            Thème : {{ activeThemeDisplayName() }}
+            @if (isCustomTheme()) {
+              <span class="scope-pill">✦ Custom</span>
+            }
+          </div>
         </div>
       </div>
       @if (docTab() === 'theme' && hasOverrides()) {
@@ -1044,9 +1049,47 @@
       <!-- DOC TAB 1: THÈME -->
       @if (docTab() === 'theme') {
         <div class="sec">
-          <div class="sec-head"><span>Presets de thème (@fx/ui)</span></div>
+          <div class="sec-head">
+            <span>Thème Custom (IA &amp; sur-mesure)</span>
+          </div>
+          <button
+            type="button"
+            class="theme-card custom-theme-card"
+            [class.active]="isCustomTheme()"
+            (click)="selectThemePreset('custom')"
+          >
+            <div class="swatches">
+              <span [style.background]="tokenValue('bg')" class="sw"></span>
+              <span [style.background]="tokenValue('primary')" class="sw"></span>
+              <span [style.background]="tokenValue('accent')" class="sw"></span>
+            </div>
+            <div class="theme-meta">
+              <div class="theme-name">✦ {{ isCustomTheme() ? activeThemeDisplayName() : 'Thème Custom (IA)' }}</div>
+              <div class="theme-font">{{ tokenValue('fontHeading') }} · {{ tokenValue('fontSize') }} · {{ tokenValue('density') }}</div>
+            </div>
+          </button>
+
+          @if (isCustomTheme()) {
+            <label class="fld">
+              <span>Nom du thème custom</span>
+              <input
+                class="inp"
+                placeholder="ex: Résidence Les Mimosas — Chaleureux"
+                [ngModel]="blueprint().theme.name || ''"
+                (ngModelChange)="setCustomThemeName($event)"
+              />
+            </label>
+          }
+
+          <button type="button" class="smart-btn primary" (click)="enrichThemeWithAi.emit()">
+            ✦ Enrichir le thème avec l’IA
+          </button>
+        </div>
+
+        <div class="sec">
+          <div class="sec-head"><span>Presets de base (@fx/ui)</span></div>
           <div class="theme-list">
-            @for (t of effectiveThemes(); track t.id) {
+            @for (t of staticThemePresets(); track t.id) {
               <button
                 type="button"
                 class="theme-card"
@@ -1068,7 +1111,7 @@
         </div>
 
         <div class="sec">
-          <div class="sec-head"><span>Tokens Couleurs (Overrides)</span></div>
+          <div class="sec-head"><span>Palette de couleurs (Custom)</span></div>
           <div class="color-grid">
             @for (tok of [
               { key: 'primary', label: 'Primary' },
@@ -1076,6 +1119,7 @@
               { key: 'bg', label: 'Fond' },
               { key: 'surface', label: 'Surface' },
               { key: 'text', label: 'Texte' },
+              { key: 'muted', label: 'Atténué' },
               { key: 'border', label: 'Bordure' },
             ]; track tok.key) {
               <div class="color-item">
@@ -1117,9 +1161,29 @@
             </select>
           </label>
           <div class="fld">
+            <span>Taille de texte globale</span>
+            <div class="seg">
+              @for (sz of ['8.5pt', '9.5pt', '10.5pt', '11.5pt', '12.5pt']; track sz) {
+                <button type="button" [class.active]="tokenValue('fontSize') === sz" (click)="setThemeToken('fontSize', sz)">
+                  {{ sz }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="fld">
+            <span>Épaisseur des bordures</span>
+            <div class="seg">
+              @for (bw of ['0pt', '0.6pt', '1pt', '1.5pt']; track bw) {
+                <button type="button" [class.active]="tokenValue('borderWidth') === bw" (click)="setThemeToken('borderWidth', bw)">
+                  {{ bw }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="fld">
             <span>Arrondis globaux</span>
             <div class="seg">
-              @for (r of ['0pt', '2pt', '4pt', '8pt']; track r) {
+              @for (r of ['0pt', '2pt', '4pt', '8pt', '12pt']; track r) {
                 <button type="button" [class.active]="tokenValue('radius') === r" (click)="setThemeToken('radius', r)">
                   {{ r }}
                 </button>

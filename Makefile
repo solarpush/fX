@@ -1,4 +1,4 @@
-.PHONY: all build build-server build-all build-rust run-daemon build-web build-full dev up down logs clean test test-unit bench run deps fmt lint
+.PHONY: all build build-server build-all build-rust run-daemon build-web build-full dev up down logs ai-bridge clean test test-unit bench run deps fmt lint
 
 # Variables
 BINARY_NAME=fx
@@ -49,6 +49,10 @@ down:
 
 logs:
 	@docker compose logs -f
+
+# Expose local AI CLI (agy, claude, gemini...) over OpenAI-compatible HTTP for Docker Compose
+ai-bridge:
+	@go run ./cmd/ai-cli-bridge
 
 # Build Angular 21 production web bundle
 build-web:

@@ -3,6 +3,8 @@ package blueprint
 import (
 	"fmt"
 	"strings"
+
+	"github.com/solarpush/fx/pkg/ui"
 )
 
 // Supported patch operations for ApplyPatches.
@@ -41,6 +43,7 @@ func (bp *Blueprint) Clone() *Blueprint {
 		return nil
 	}
 	cp := *bp
+	cp.Theme.Overrides = cloneThemeTokens(bp.Theme.Overrides)
 	if len(bp.Meta.Modules) > 0 {
 		cp.Meta.Modules = append([]string(nil), bp.Meta.Modules...)
 	}
@@ -146,10 +149,44 @@ func applySinglePatch(bp *Blueprint, p Patch) error {
 		if p.Theme == nil {
 			return fmt.Errorf("theme payload is required")
 		}
-		if p.Theme.Preset != "" {
-			bp.Theme = *p.Theme
-		} else {
+		targetPreset := strings.TrimSpace(p.Theme.Preset)
+		currentPreset := strings.TrimSpace(bp.Theme.Preset)
+		if currentPreset == "" {
+			currentPreset = "swiss-minimal"
+		}
+
+		switch {
+		case targetPreset == "" || targetPreset == currentPreset:
+			// Incremental enrichment on the active theme (especially "custom"):
+			// merge overrides without wiping previously enriched tokens.
+			if targetPreset != "" {
+				bp.Theme.Preset = targetPreset
+			}
+			if name := strings.TrimSpace(p.Theme.Name); name != "" {
+				bp.Theme.Name = name
+			}
 			mergeThemeTokens(&bp.Theme.Overrides, p.Theme.Overrides)
+
+		case targetPreset == "custom":
+			// Promoting/forking an existing preset into the AI-enriched "custom" theme:
+			// seed unset base tokens from the previous preset so visual continuity is
+			// preserved, then layer the new custom overrides on top.
+			if prevInfo, ok := ui.GetTheme(currentPreset); ok {
+				seedMissingTokensFromPreset(&bp.Theme.Overrides, prevInfo)
+			}
+			bp.Theme.Preset = "custom"
+			if name := strings.TrimSpace(p.Theme.Name); name != "" {
+				bp.Theme.Name = name
+			}
+			mergeThemeTokens(&bp.Theme.Overrides, p.Theme.Overrides)
+
+		default:
+			// Switching explicitly to a different named static preset.
+			bp.Theme = ThemeConfig{
+				Preset:    targetPreset,
+				Name:      strings.TrimSpace(p.Theme.Name),
+				Overrides: cloneThemeTokens(p.Theme.Overrides),
+			}
 		}
 		return nil
 
@@ -308,6 +345,60 @@ func applySinglePatch(bp *Blueprint, p Patch) error {
 	}
 }
 
+func cloneThemeTokens(src ThemeTokens) ThemeTokens {
+	cp := src
+	if src.IsDark != nil {
+		v := *src.IsDark
+		cp.IsDark = &v
+	}
+	return cp
+}
+
+func seedMissingTokensFromPreset(dst *ThemeTokens, preset ui.ThemePresetInfo) {
+	if dst.Bg == "" {
+		dst.Bg = preset.Bg
+	}
+	if dst.Surface == "" {
+		dst.Surface = preset.Surface
+	}
+	if dst.Text == "" {
+		dst.Text = preset.Text
+	}
+	if dst.Muted == "" {
+		dst.Muted = preset.Muted
+	}
+	if dst.Primary == "" {
+		dst.Primary = preset.Primary
+	}
+	if dst.Accent == "" {
+		dst.Accent = preset.Accent
+	}
+	if dst.Border == "" {
+		dst.Border = preset.Border
+	}
+	if dst.FontHeading == "" {
+		dst.FontHeading = preset.FontHeading
+	}
+	if dst.FontBody == "" {
+		dst.FontBody = preset.FontBody
+	}
+	if dst.FontMono == "" {
+		dst.FontMono = preset.FontMono
+	}
+	if dst.FontSize == "" && preset.FontSize != "" {
+		dst.FontSize = preset.FontSize
+	}
+	if dst.Radius == "" {
+		dst.Radius = preset.Radius
+	}
+	if dst.BorderWidth == "" && preset.BorderWidth != "" {
+		dst.BorderWidth = preset.BorderWidth
+	}
+	if dst.Density == "" {
+		dst.Density = preset.Density
+	}
+}
+
 func mergeThemeTokens(dst *ThemeTokens, src ThemeTokens) {
 	if src.Primary != "" {
 		dst.Primary = src.Primary
@@ -330,6 +421,18 @@ func mergeThemeTokens(dst *ThemeTokens, src ThemeTokens) {
 	if src.Border != "" {
 		dst.Border = src.Border
 	}
+	if src.Success != "" {
+		dst.Success = src.Success
+	}
+	if src.Warning != "" {
+		dst.Warning = src.Warning
+	}
+	if src.Danger != "" {
+		dst.Danger = src.Danger
+	}
+	if src.Info != "" {
+		dst.Info = src.Info
+	}
 	if src.FontHeading != "" {
 		dst.FontHeading = src.FontHeading
 	}
@@ -339,11 +442,21 @@ func mergeThemeTokens(dst *ThemeTokens, src ThemeTokens) {
 	if src.FontMono != "" {
 		dst.FontMono = src.FontMono
 	}
+	if src.FontSize != "" {
+		dst.FontSize = src.FontSize
+	}
 	if src.Radius != "" {
 		dst.Radius = src.Radius
 	}
+	if src.BorderWidth != "" {
+		dst.BorderWidth = src.BorderWidth
+	}
 	if src.Density != "" {
 		dst.Density = src.Density
+	}
+	if src.IsDark != nil {
+		v := *src.IsDark
+		dst.IsDark = &v
 	}
 }
 

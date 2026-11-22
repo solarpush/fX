@@ -1,0 +1,164 @@
+{
+  "establishment": {
+    "name": "Le Bistrot du Marché",
+    "category": "Bistrot traditionnel",
+    "address": "14 Rue des Halles, 69001 Lyon",
+    "phone": "+33 4 78 12 34 56",
+    "email": "contact@bistrotdumarche.fr",
+    "website": "https://www.bistrotdumarche.fr",
+    "openingHours": "Du mardi au dimanche, 12h00-14h30 et 19h00-22h30"
+  },
+  "document": {
+    "title": "Menu du Dimanche",
+    "subtitle": "Cuisine de saison et produits du terroir",
+    "reference": "MENU-2026-1122",
+    "status": "PUBLIE",
+    "date": "2026-11-22",
+    "dayOfWeek": "Dimanche",
+    "service": "Déjeuner",
+    "currency": "EUR",
+    "summary": "Notre chef compose chaque matin la carte selon les arrivages du marché local."
+  },
+  "menu": {
+    "dailySpecials": [
+      {
+        "name": "Blanquette de veau à l'ancienne",
+        "description": "Mijotée aux petits légumes de saison, servie avec du riz pilaf",
+        "price": 21.5,
+        "isAvailable": true
+      },
+      {
+        "name": "Dos de cabillaud rôti au beurre blanc",
+        "description": "Purée de céleri-rave et poireaux fondants",
+        "price": 23,
+        "isAvailable": true
+      }
+    ],
+    "formulas": [
+      {
+        "name": "Formule Déjeuner",
+        "description": "Au choix parmi la carte du jour",
+        "price": 26,
+        "includedCourses": [
+          "Entrée + Plat",
+          "Plat + Dessert"
+        ]
+      },
+      {
+        "name": "Menu Complet du Dimanche",
+        "description": "Menu dégustation complet avec café offert",
+        "price": 34,
+        "includedCourses": [
+          "Entrée",
+          "Plat",
+          "Dessert"
+        ]
+      }
+    ],
+    "sections": [
+      {
+        "title": "Entrées",
+        "description": "Pour commencer en douceur",
+        "items": [
+          {
+            "name": "Velouté de potimarron aux châtaignes",
+            "description": "Crème fermière fouettée et croûtons dorés à l'huile d'olive",
+            "price": 9.5,
+            "isAvailable": true,
+            "dietaryTags": [
+              "Végétarien",
+              "Fait maison"
+            ],
+            "allergens": [
+              "Gluten",
+              "Lait"
+            ]
+          },
+          {
+            "name": "Terrine de campagne maison",
+            "description": "Pickles d'oignons rouges, cornichons et pain de campagne grillé",
+            "price": 10.5,
+            "isAvailable": true,
+            "dietaryTags": [
+              "Sans lactose",
+              "Fait maison"
+            ],
+            "allergens": [
+              "Gluten",
+              "Sulfites"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Plats principaux",
+        "description": "Viandes françaises et poissons de nos côtes",
+        "items": [
+          {
+            "name": "Suprême de volaille fermière aux morilles",
+            "description": "Gratin dauphinois fondant et haricots verts",
+            "price": 22,
+            "isAvailable": true,
+            "dietaryTags": [
+              "Sans gluten",
+              "Fait maison"
+            ],
+            "allergens": [
+              "Lait",
+              "Sulfites"
+            ]
+          },
+          {
+            "name": "Risotto crémeux aux champignons des bois",
+            "description": "Riz Carnaroli, parmesan affiné 24 mois et huile de truffe",
+            "price": 18.5,
+            "isAvailable": true,
+            "dietaryTags": [
+              "Végétarien",
+              "Sans gluten"
+            ],
+            "allergens": [
+              "Lait",
+              "Céleri"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Desserts",
+        "description": "Douceurs préparées par notre pâtissier",
+        "items": [
+          {
+            "name": "Tarte Tatin tiède",
+            "description": "Pommes caramélisées au beurre demi-sel et crème crue d'Isigny",
+            "price": 8.5,
+            "isAvailable": true,
+            "dietaryTags": [
+              "Végétarien",
+              "Fait maison"
+            ],
+            "allergens": [
+              "Gluten",
+              "Lait"
+            ]
+          },
+          {
+            "name": "Mousse au chocolat noir 70 %",
+            "description": "Chocolat Grand Cru et tuile croustillante aux amandes",
+            "price": 8,
+            "isAvailable": true,
+            "dietaryTags": [
+              "Végétarien",
+              "Fait maison"
+            ],
+            "allergens": [
+              "Oeufs",
+              "Fruits à coque"
+            ]
+          }
+        ]
+      }
+    ],
+    "footnote": "Prix nets TTC en euros, service compris. Viandes d'origine France. La liste complète des allergènes est disponible sur demande auprès de votre serveur."
+  }
+}

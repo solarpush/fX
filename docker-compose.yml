@@ -74,8 +74,12 @@ services:
       # AI Generation (lit .env si présent)
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       - AI_BASE_URL=${AI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}
-      - AI_MODEL=${AI_MODEL:-gemini-3.5-flash}
+      - AI_MODEL=${AI_MODEL:-gemini-4-hydrogen}
       - AI_API_KEY=${AI_API_KEY:-}
+      - AI_CLI_COMMAND=${AI_CLI_COMMAND:-agy}
+      - AI_CLI_ARGS=${AI_CLI_ARGS:-}
+      - AI_CLI_EFFORT=${AI_CLI_EFFORT:-}
+      - AI_CLI_TIMEOUT=${AI_CLI_TIMEOUT:-180}
 
       # Feature Flags
       - STUDIO_ENABLED=${STUDIO_ENABLED:-true}

@@ -93,6 +93,23 @@
     density: "compact",
     is-dark: false,
   ),
+  "custom": (
+    id: "custom",
+    bg: rgb("#ffffff"),
+    surface: rgb("#f8fafc"),
+    text: rgb("#0f172a"),
+    muted: rgb("#64748b"),
+    primary: rgb("#6366f1"),
+    accent: rgb("#0ea5e9"),
+    border: rgb("#e2e8f0"),
+    font-heading: "Open Sans",
+    font-body: "Open Sans",
+    font-mono: "Liberation Mono",
+    radius: 6pt,
+    border-width: 0.75pt,
+    density: "comfortable",
+    is-dark: false,
+  ),
 )
 
 #let _fx-is-hex(s) = {
@@ -271,6 +288,17 @@
   }
 }
 
+#let _fx-is-dark-color(col, fallback: false) = {
+  if type(col) != color {
+    return fallback
+  }
+  let comps = color.rgb(col).components()
+  let r = comps.at(0) / 100%
+  let g = comps.at(1) / 100%
+  let b = comps.at(2) / 100%
+  (0.299 * r + 0.587 * g + 0.114 * b) < 0.48
+}
+
 #let fx-theme(preset: "swiss-minimal", overrides: (:)) = {
   let base = if type(preset) == str and preset in fx-themes {
     fx-themes.at(preset)
@@ -279,9 +307,20 @@
   }
   let ov = if type(overrides) == dictionary { overrides } else { (:) }
 
-  let pick-str(key, fallback) = {
-    if key in ov and type(ov.at(key)) == str and ov.at(key).trim().len() > 0 {
-      ov.at(key).trim()
+  let ov-get(kebab, camel: none) = {
+    if kebab in ov {
+      ov.at(kebab)
+    } else if camel != none and camel in ov {
+      ov.at(camel)
+    } else {
+      none
+    }
+  }
+
+  let pick-str(kebab, fallback, camel: none) = {
+    let v = ov-get(kebab, camel: camel)
+    if type(v) == str and v.trim().len() > 0 {
+      v.trim()
     } else {
       fallback
     }
@@ -290,28 +329,45 @@
   let density = pick-str("density", base.density)
   let metrics = _fx-density-metrics(density)
 
+  let bg-raw = ov-get("bg")
+  let bg-col = _fx-parse-color(bg-raw, base.bg)
+  let explicit-dark = ov-get("is-dark", camel: "isDark")
+  let is-dark = if type(explicit-dark) == bool {
+    explicit-dark
+  } else if bg-raw != none {
+    _fx-is-dark-color(bg-col, fallback: base.is-dark)
+  } else {
+    base.is-dark
+  }
+
+  let default-success = if is-dark { rgb("#34d399") } else { rgb("#15803d") }
+  let default-warning = if is-dark { rgb("#fbbf24") } else { rgb("#b45309") }
+  let default-danger = if is-dark { rgb("#f87171") } else { rgb("#b91c1c") }
+  let default-info = if is-dark { rgb("#38bdf8") } else { rgb("#0369a1") }
+
   let merged = (
     id: base.id,
-    bg: _fx-parse-color(ov.at("bg", default: none), base.bg),
-    surface: _fx-parse-color(ov.at("surface", default: none), base.surface),
-    text: _fx-parse-color(ov.at("text", default: none), base.text),
-    muted: _fx-parse-color(ov.at("muted", default: none), base.muted),
-    primary: _fx-parse-color(ov.at("primary", default: none), base.primary),
-    accent: _fx-parse-color(ov.at("accent", default: none), base.accent),
-    border: _fx-parse-color(ov.at("border", default: none), base.border),
-    font-heading: pick-str("font-heading", base.font-heading),
-    font-body: pick-str("font-body", base.font-body),
-    font-mono: pick-str("font-mono", base.font-mono),
-    radius: _fx-parse-length(ov.at("radius", default: none), base.radius),
-    border-width: _fx-parse-length(ov.at("border-width", default: none), base.border-width),
+    bg: bg-col,
+    surface: _fx-parse-color(ov-get("surface"), base.surface),
+    text: _fx-parse-color(ov-get("text"), base.text),
+    muted: _fx-parse-color(ov-get("muted"), base.muted),
+    primary: _fx-parse-color(ov-get("primary"), base.primary),
+    accent: _fx-parse-color(ov-get("accent"), base.accent),
+    border: _fx-parse-color(ov-get("border"), base.border),
+    font-heading: pick-str("font-heading", base.font-heading, camel: "fontHeading"),
+    font-body: pick-str("font-body", base.font-body, camel: "fontBody"),
+    font-mono: pick-str("font-mono", base.font-mono, camel: "fontMono"),
+    font-size: _fx-parse-length(ov-get("font-size", camel: "fontSize"), metrics.font-size),
+    radius: _fx-parse-length(ov-get("radius"), base.radius),
+    border-width: _fx-parse-length(ov-get("border-width", camel: "borderWidth"), base.border-width),
     density: density,
-    is-dark: base.is-dark,
-    success: if base.is-dark { rgb("#34d399") } else { rgb("#15803d") },
-    warning: if base.is-dark { rgb("#fbbf24") } else { rgb("#b45309") },
-    danger: if base.is-dark { rgb("#f87171") } else { rgb("#b91c1c") },
-    info: if base.is-dark { rgb("#38bdf8") } else { rgb("#0369a1") },
+    is-dark: is-dark,
+    success: _fx-parse-color(ov-get("success"), default-success),
+    warning: _fx-parse-color(ov-get("warning"), default-warning),
+    danger: _fx-parse-color(ov-get("danger"), default-danger),
+    info: _fx-parse-color(ov-get("info"), default-info),
   )
-  merged + metrics
+  metrics + merged
 }
 
 #let _fx-resolve-theme(theme) = {

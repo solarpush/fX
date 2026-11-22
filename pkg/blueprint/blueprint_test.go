@@ -1180,3 +1180,111 @@ func TestCompile_MultilineTextAndCallout(t *testing.T) {
 		}
 	}
 }
+
+func TestCustomTheme_CompileAndIncrementalEnrichment(t *testing.T) {
+	isDarkFalse := false
+	bp := &Blueprint{
+		Version: CurrentVersion,
+		Meta:    Meta{Title: "Menu Senior"},
+		Theme: ThemeConfig{
+			Preset: "editorial-gazette",
+		},
+		Page: PageConfig{Paper: "a4"},
+		Blocks: []Block{
+			{ID: "h1", Type: "header", Props: map[string]interface{}{"title": "Menu du Jour"}},
+		},
+	}
+
+	// Step 1: AI transitions from "editorial-gazette" into "custom" with partial overrides.
+	// Unset tokens should inherit seamlessly from editorial-gazette.
+	step1, err := ApplyPatches(bp, []Patch{
+		{
+			Op: OpSetTheme,
+			Theme: &ThemeConfig{
+				Preset: "custom",
+				Name:   "Résidence Les Mimosas",
+				Overrides: ThemeTokens{
+					Primary:     "#2f5d50",
+					FontSize:    "11.5pt",
+					BorderWidth: "1pt",
+					Success:     "#2e7d32",
+					IsDark:      &isDarkFalse,
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("step1 ApplyPatches failed: %v", err)
+	}
+	if step1.Theme.Preset != "custom" || step1.Theme.Name != "Résidence Les Mimosas" {
+		t.Fatalf("unexpected theme header after step1: %+v", step1.Theme)
+	}
+	if step1.Theme.Overrides.Bg != "#fdf9f3" {
+		t.Errorf("expected inherited editorial-gazette bg #fdf9f3, got %q", step1.Theme.Overrides.Bg)
+	}
+	if step1.Theme.Overrides.Primary != "#2f5d50" || step1.Theme.Overrides.FontSize != "11.5pt" {
+		t.Errorf("expected AI overrides applied, got %+v", step1.Theme.Overrides)
+	}
+
+	// Step 2: AI incrementally enriches the ALREADY-custom theme without losing earlier tokens!
+	step2, err := ApplyPatches(step1, []Patch{
+		{
+			Op: OpSetTheme,
+			Theme: &ThemeConfig{
+				Preset: "custom",
+				Overrides: ThemeTokens{
+					Accent: "#c26d4a",
+					Radius: "8pt",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("step2 ApplyPatches failed: %v", err)
+	}
+	if step2.Theme.Name != "Résidence Les Mimosas" {
+		t.Errorf("expected theme name preserved across enrichment, got %q", step2.Theme.Name)
+	}
+	if step2.Theme.Overrides.Primary != "#2f5d50" || step2.Theme.Overrides.Bg != "#fdf9f3" || step2.Theme.Overrides.FontSize != "11.5pt" {
+		t.Errorf("expected previous custom tokens preserved across enrichment, got %+v", step2.Theme.Overrides)
+	}
+	if step2.Theme.Overrides.Accent != "#c26d4a" || step2.Theme.Overrides.Radius != "8pt" {
+		t.Errorf("expected new custom tokens merged, got %+v", step2.Theme.Overrides)
+	}
+
+	// Verify Validate & Compile emit all custom tokens cleanly.
+	if errs := step2.Validate(); len(errs) > 0 {
+		t.Fatalf("step2 Validate failed: %v", errs)
+	}
+	compiled, err := Compile(step2)
+	if err != nil {
+		t.Fatalf("step2 Compile failed: %v", err)
+	}
+	assertBalancedTypst(t, compiled)
+
+	for _, want := range []string{
+		`// Theme: Résidence Les Mimosas`,
+		`#let theme = fx-theme(preset: "custom", overrides:`,
+		`primary: rgb("#2f5d50")`,
+		`accent: rgb("#c26d4a")`,
+		`bg: rgb("#fdf9f3")`,
+		`success: rgb("#2e7d32")`,
+		`font-size: 11.5pt`,
+		`border-width: 1pt`,
+		`radius: 8pt`,
+		`is-dark: false`,
+	} {
+		if !strings.Contains(compiled, want) {
+			t.Errorf("compiled custom theme missing %q\nfull output:\n%s", want, compiled)
+		}
+	}
+
+	// Validation should reject invalid fontSize/borderWidth/semantic hex colors.
+	bad := step2.Clone()
+	bad.Theme.Overrides.FontSize = "auto"
+	bad.Theme.Overrides.BorderWidth = "1fr"
+	bad.Theme.Overrides.Success = "green"
+	if errs := bad.Validate(); len(errs) < 3 {
+		t.Errorf("expected >=3 validation errors on bad custom tokens, got %v", errs)
+	}
+}

@@ -217,7 +217,27 @@ export class StudioBuilderComponent implements OnInit, OnDestroy {
 
   protected readonly activeThemeInfo = computed<ThemePresetInfo>(() => {
     const presetId = this.blueprint().theme?.preset || 'swiss-minimal';
-    return this.themes().find((t) => t.id === presetId) ?? BUILT_IN_THEMES[0];
+    return (
+      this.themes().find((t) => t.id === presetId) ??
+      BUILT_IN_THEMES.find((t) => t.id === presetId) ??
+      BUILT_IN_THEMES[1]
+    );
+  });
+
+  protected readonly presetThemes = computed<readonly ThemePresetInfo[]>(() =>
+    this.themes().filter((t) => t.id !== 'custom'),
+  );
+
+  protected readonly isCustomTheme = computed<boolean>(
+    () => (this.blueprint().theme?.preset || 'swiss-minimal') === 'custom',
+  );
+
+  protected readonly activeThemeDisplayName = computed<string>(() => {
+    const th = this.blueprint().theme;
+    if (th?.preset === 'custom') {
+      return th.name?.trim() || 'Thème Custom';
+    }
+    return this.activeThemeInfo().name;
   });
 
   protected readonly effectiveThemeColors = computed(() => {
@@ -227,6 +247,10 @@ export class StudioBuilderComponent implements OnInit, OnDestroy {
       bg: ov?.bg || base.bg,
       primary: ov?.primary || base.primary,
       accent: ov?.accent || base.accent,
+      fontHeading: ov?.fontHeading || base.fontHeading,
+      fontSize: ov?.fontSize || base.fontSize || '9.5pt',
+      radius: ov?.radius || base.radius,
+      density: ov?.density || base.density,
     };
   });
 
@@ -522,17 +546,85 @@ const blob = await response.blob();`;
   }
 
   protected selectQuickTheme(presetId: string): void {
+    const curr = this.blueprint().theme ?? { preset: 'swiss-minimal', overrides: {} };
+    if (presetId === 'custom') {
+      if (curr.preset === 'custom') return;
+      const base = this.activeThemeInfo();
+      const seeded: ThemeTokens = {
+        bg: curr.overrides?.bg || base.bg,
+        surface: curr.overrides?.surface || base.surface,
+        text: curr.overrides?.text || base.text,
+        muted: curr.overrides?.muted || base.muted,
+        primary: curr.overrides?.primary || base.primary,
+        accent: curr.overrides?.accent || base.accent,
+        border: curr.overrides?.border || base.border,
+        fontHeading: curr.overrides?.fontHeading || base.fontHeading,
+        fontBody: curr.overrides?.fontBody || base.fontBody,
+        fontMono: curr.overrides?.fontMono || base.fontMono,
+        fontSize: curr.overrides?.fontSize || base.fontSize || '9.5pt',
+        radius: curr.overrides?.radius || base.radius,
+        borderWidth: curr.overrides?.borderWidth || base.borderWidth || '0.75pt',
+        density: curr.overrides?.density || base.density,
+      };
+      this.onThemeChange({
+        preset: 'custom',
+        name: curr.name?.trim() || `${base.name} personnalisé`,
+        overrides: seeded,
+      });
+      return;
+    }
+
     this.onThemeChange({
       preset: presetId,
-      overrides: { ...(this.blueprint().theme?.overrides ?? {}) },
+      overrides: {},
     });
   }
 
-  protected setQuickToken(key: keyof ThemeTokens, value: string): void {
+  protected setQuickToken(key: Exclude<keyof ThemeTokens, 'isDark'>, value: string): void {
     const curr = this.blueprint().theme ?? { preset: 'swiss-minimal', overrides: {} };
-    const nextOv: ThemeTokens = { ...(curr.overrides ?? {}), [key]: value };
-    if (!value.trim()) delete nextOv[key];
-    this.onThemeChange({ preset: curr.preset || 'swiss-minimal', overrides: nextOv });
+    const base = this.activeThemeInfo();
+    const nextOv: ThemeTokens =
+      curr.preset === 'custom'
+        ? { ...(curr.overrides ?? {}) }
+        : {
+            bg: base.bg,
+            surface: base.surface,
+            text: base.text,
+            muted: base.muted,
+            primary: base.primary,
+            accent: base.accent,
+            border: base.border,
+            fontHeading: base.fontHeading,
+            fontBody: base.fontBody,
+            fontMono: base.fontMono,
+            fontSize: base.fontSize || '9.5pt',
+            radius: base.radius,
+            borderWidth: base.borderWidth || '0.75pt',
+            density: base.density,
+            ...(curr.overrides ?? {}),
+          };
+
+    if (!value.trim()) {
+      delete nextOv[key];
+    } else {
+      nextOv[key] = value;
+    }
+
+    this.onThemeChange({
+      preset: 'custom',
+      name: curr.name?.trim() || (curr.preset === 'custom' ? undefined : `${base.name} personnalisé`),
+      overrides: nextOv,
+    });
+  }
+
+  protected openAiEnrichTheme(): void {
+    this.showThemePopover.set(false);
+    this.seqCounter += 1;
+    this.aiPrefillPrompt.set({
+      text: 'Enrichis et personnalise le thème custom (nom, palette de couleurs harmonieuse, typographie, taille de police et arrondis) pour sublimer ce document selon son sujet et son public.',
+      seq: this.seqCounter,
+    });
+    this.showAiDrawer.set(true);
   }
 
   protected onThemeChange(theme: ThemeConfig): void {

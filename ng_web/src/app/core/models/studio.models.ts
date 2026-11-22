@@ -52,6 +52,7 @@ export interface ThemePresetInfo {
   name: string;
   description: string;
   isDark: boolean;
+  isCustom?: boolean;
   bg: string;
   surface: string;
   text: string;
@@ -62,7 +63,9 @@ export interface ThemePresetInfo {
   fontHeading: string;
   fontBody: string;
   fontMono: string;
+  fontSize?: string;
   radius: string;
+  borderWidth?: string;
   density: string;
 }
 
@@ -104,15 +107,23 @@ export interface ThemeTokens {
   text?: string;
   muted?: string;
   border?: string;
+  success?: string;
+  warning?: string;
+  danger?: string;
+  info?: string;
   fontHeading?: string;
   fontBody?: string;
   fontMono?: string;
+  fontSize?: string;
   radius?: string;
+  borderWidth?: string;
   density?: string;
+  isDark?: boolean;
 }
 
 export interface ThemeConfig {
   preset: string;
+  name?: string;
   overrides?: ThemeTokens;
 }
 
@@ -498,6 +509,27 @@ export const PAPER_SIZES: readonly { id: PaperSize; label: string; dimensions: s
 
 export const BUILT_IN_THEMES: readonly ThemePresetInfo[] = [
   {
+    id: 'custom',
+    name: 'Custom (IA)',
+    description: 'Thème sur-mesure créé et enrichi directement par le Co-pilote IA ou vos tokens personnalisés.',
+    isDark: false,
+    isCustom: true,
+    bg: '#ffffff',
+    surface: '#f8fafc',
+    text: '#0f172a',
+    muted: '#64748b',
+    primary: '#6366f1',
+    accent: '#0ea5e9',
+    border: '#e2e8f0',
+    fontHeading: 'Open Sans',
+    fontBody: 'Open Sans',
+    fontMono: 'Liberation Mono',
+    fontSize: '9.5pt',
+    radius: '6pt',
+    borderWidth: '0.75pt',
+    density: 'comfortable',
+  },
+  {
     id: 'swiss-minimal',
     name: 'Swiss Minimal',
     description: 'Crisp white canvas, deep slate typography, cobalt accent, and fine hairlines.',
@@ -512,7 +544,9 @@ export const BUILT_IN_THEMES: readonly ThemePresetInfo[] = [
     fontHeading: 'Liberation Sans',
     fontBody: 'Liberation Sans',
     fontMono: 'Liberation Mono',
+    fontSize: '9.5pt',
     radius: '4pt',
+    borderWidth: '0.6pt',
     density: 'comfortable',
   },
   {
@@ -530,7 +564,9 @@ export const BUILT_IN_THEMES: readonly ThemePresetInfo[] = [
     fontHeading: 'Open Sans',
     fontBody: 'Open Sans',
     fontMono: 'Liberation Mono',
+    fontSize: '9.5pt',
     radius: '8pt',
+    borderWidth: '0.75pt',
     density: 'comfortable',
   },
   {
@@ -548,7 +584,9 @@ export const BUILT_IN_THEMES: readonly ThemePresetInfo[] = [
     fontHeading: 'Liberation Serif',
     fontBody: 'Noto Serif',
     fontMono: 'Liberation Mono',
+    fontSize: '10.2pt',
     radius: '2pt',
+    borderWidth: '0.6pt',
     density: 'relaxed',
   },
   {
@@ -566,7 +604,9 @@ export const BUILT_IN_THEMES: readonly ThemePresetInfo[] = [
     fontHeading: 'Noto Sans',
     fontBody: 'Noto Sans',
     fontMono: 'Liberation Mono',
+    fontSize: '9.5pt',
     radius: '4pt',
+    borderWidth: '0.75pt',
     density: 'comfortable',
   },
   {
@@ -584,7 +624,9 @@ export const BUILT_IN_THEMES: readonly ThemePresetInfo[] = [
     fontHeading: 'Liberation Mono',
     fontBody: 'Liberation Mono',
     fontMono: 'Liberation Mono',
+    fontSize: '8.8pt',
     radius: '0pt',
+    borderWidth: '1.5pt',
     density: 'compact',
   },
 ];

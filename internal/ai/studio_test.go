@@ -1155,3 +1155,103 @@ func TestGenerateStudio_InputValidationAndModeResolution(t *testing.T) {
 		t.Errorf("clampAttempts(99) = %d, want 4", got)
 	}
 }
+
+func TestGenerateStudio_CustomThemeOwnershipAndEnrichment(t *testing.T) {
+	// Turn 1: AI creates a bespoke "custom" theme for a senior residence menu.
+	turn1Resp := `{
+		"explanation": "Création d'un thème custom chaleureux et lisible pour les menus seniors.",
+		"blueprint": {
+			"version": "1.0",
+			"meta": {"title": "Menus Journaliers"},
+			"theme": {
+				"preset": "custom",
+				"name": "Résidence Les Mimosas — Chaleureux",
+				"overrides": {
+					"bg": "#fdfaf5",
+					"surface": "#f5efe6",
+					"text": "#2c2520",
+					"muted": "#75685d",
+					"primary": "#2f5d50",
+					"accent": "#c26d4a",
+					"border": "#dfd5c8",
+					"fontHeading": "Liberation Serif",
+					"fontBody": "Open Sans",
+					"fontSize": "11.5pt",
+					"radius": "6pt",
+					"borderWidth": "0.75pt",
+					"density": "relaxed"
+				}
+			},
+			"page": {"paper": "a4"},
+			"blocks": [
+				{"id": "hdr-1", "type": "header", "props": {"title": "Menu du Jour"}}
+			]
+		}
+	}`
+	// Turn 2: AI incrementally enriches the custom theme via set_theme patch without losing Turn 1 tokens.
+	turn2Resp := `{
+		"explanation": "Enrichissement du thème custom avec un accent doré et des arrondis plus doux.",
+		"patches": [
+			{
+				"op": "set_theme",
+				"theme": {
+					"preset": "custom",
+					"overrides": {
+						"accent": "#b45309",
+						"radius": "10pt"
+					}
+				}
+			}
+		]
+	}`
+
+	srv, reqs := newMockOpenAIServer(t, []string{turn1Resp, turn2Resp})
+	client := newTestClient("openai", srv.URL)
+
+	res1, err := client.GenerateStudio(context.Background(), StudioGenerateRequest{
+		Mode:   "blueprint",
+		Prompt: "Crée un menu journalier pour résidence senior",
+	}, nil)
+	if err != nil {
+		t.Fatalf("turn1 GenerateStudio failed: %v", err)
+	}
+	if !res1.CompileSuccess || res1.Blueprint == nil {
+		t.Fatalf("turn1 expected compile success, got errs=%v", res1.CompileErrors)
+	}
+	if res1.Blueprint.Theme.Preset != "custom" || res1.Blueprint.Theme.Name != "Résidence Les Mimosas — Chaleureux" {
+		t.Fatalf("unexpected turn1 theme: %+v", res1.Blueprint.Theme)
+	}
+	if res1.Blueprint.Theme.Overrides.FontSize != "11.5pt" {
+		t.Errorf("expected turn1 fontSize 11.5pt, got %q", res1.Blueprint.Theme.Overrides.FontSize)
+	}
+
+	// Verify system prompt explicitly teaches the AI about custom theme ownership & BlockStyle.
+	sysPrompt, _ := (*reqs)[0].Msgs[0]["content"].(string)
+	for _, needle := range []string{"CUSTOM THEME OWNERSHIP", `"preset": "custom"`, "fontSize", "borderWidth", "block.style"} {
+		if !strings.Contains(sysPrompt, needle) {
+			t.Errorf("blueprint system prompt missing %q", needle)
+		}
+	}
+
+	// Turn 2: edit mode incremental theme enrichment.
+	res2, err := client.GenerateStudio(context.Background(), StudioGenerateRequest{
+		Mode:             "blueprint",
+		Prompt:           "Rends l'accent plus doré et les coins plus arrondis",
+		CurrentBlueprint: res1.Blueprint,
+	}, nil)
+	if err != nil {
+		t.Fatalf("turn2 GenerateStudio failed: %v", err)
+	}
+	if !res2.CompileSuccess || res2.Blueprint == nil {
+		t.Fatalf("turn2 expected compile success, got errs=%v", res2.CompileErrors)
+	}
+	if res2.Blueprint.Theme.Preset != "custom" || res2.Blueprint.Theme.Name != "Résidence Les Mimosas — Chaleureux" {
+		t.Errorf("expected custom theme identity preserved on turn2, got %+v", res2.Blueprint.Theme)
+	}
+	if res2.Blueprint.Theme.Overrides.Primary != "#2f5d50" || res2.Blueprint.Theme.Overrides.FontSize != "11.5pt" {
+		t.Errorf("expected previous custom theme tokens preserved on turn2, got %+v", res2.Blueprint.Theme.Overrides)
+	}
+	if res2.Blueprint.Theme.Overrides.Accent != "#b45309" || res2.Blueprint.Theme.Overrides.Radius != "10pt" {
+		t.Errorf("expected enriched tokens applied on turn2, got %+v", res2.Blueprint.Theme.Overrides)
+	}
+}

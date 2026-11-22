@@ -1,0 +1,282 @@
+{
+  "version": 3,
+  "updatedAt": "2026-11-21T23:53:39.19807215Z",
+  "kind": "blueprint",
+  "summary": "v3 (blueprint)",
+  "record": {
+    "id": "nouveau-document",
+    "name": "menus test",
+    "description": "Document créé avec fX Studio Builder v2",
+    "category": "document",
+    "kind": "blueprint",
+    "engineMode": "blueprint",
+    "version": 3,
+    "createdAt": "2026-11-21T23:53:23.629212441Z",
+    "updatedAt": "2026-11-21T23:53:39.19807215Z",
+    "content": "#import \"/_fx/ui.typ\": *\n\n#let data = json(\"data.json\")\n#let theme = fx-theme(preset: \"swiss-minimal\", overrides: (primary: rgb(\"#1d4ed8\"), accent: rgb(\"#0f766e\"), font-heading: \"Open Sans\", font-body: \"Open Sans\", density: \"compact\"))\n\n#show: fx-doc.with(\n  theme: theme,\n  paper: \"a4\",\n  flipped: false,\n  margin: (top: 1.2cm, bottom: 1.2cm, left: 1.5cm, right: 1.5cm),\n  footer: (left: fx-str(fx-get(data, \"establishment.name\")) + \" — \" + fx-str(fx-get(data, \"establishment.address\")), center: fx-str(fx-get(data, \"establishment.phone\")) + \" • \" + fx-str(fx-get(data, \"establishment.website\")), right: \"\", show-page-numbers: true),\n)\n\n#fx-block(id: \"doc-header\")[\n  #fx-header(\n    title: fx-str(fx-get(data, \"document.title\")),\n    eyebrow: fx-str(fx-get(data, \"establishment.name\")) + \" — \" + fx-str(fx-get(data, \"establishment.category\")),\n    subtitle: fx-str(fx-get(data, \"document.subtitle\")),\n    badge: fx-str(fx-get(data, \"document.service\")),\n    align-mode: \"center\",\n    meta: (\n      (label: \"Jour\", value: fx-str(fx-get(data, \"document.dayOfWeek\"))),\n      (label: \"Date\", value: fx-date(fx-get(data, \"document.date\"))),\n      (label: \"Référence\", value: fx-str(fx-get(data, \"document.reference\"))),\n    ),\n    theme: theme,\n  )\n]\n\n#if fx-truthy(fx-get(data, \"document.summary\")) [\n  #fx-block(id: \"doc-intro\")[\n    #block(width: 100%)[#align(center)[#text(size: 9.5pt, style: \"italic\", fill: theme.muted)[#(fx-str(fx-get(data, \"document.summary\")))]]]\n  ]\n]\n\n#fx-block(id: \"establishment-info\")[\n  #fx-kv-grid(\n    columns: 3,\n    items: (\n      (label: \"Horaires\", value: fx-str(fx-get(data, \"establishment.openingHours\"))),\n      (label: \"Réservations\", value: fx-str(fx-get(data, \"establishment.phone\"))),\n      (label: \"Adresse\", value: fx-str(fx-get(data, \"establishment.address\"))),\n    ),\n    theme: theme,\n  )\n]\n\n#fx-block(id: \"intro-divider\")[\n  #fx-divider(style: \"accent\", theme: theme)\n]\n\n#fx-block(id: \"menu-columns\")[\n  #fx-columns(\n    widths: (1fr, 1.25fr,),\n    gap: 10pt,\n    [\n      #fx-block(id: \"menu-left-col\")[\n        #fx-card(theme: theme)[\n          #if fx-truthy(fx-get(data, \"menu.dailySpecials\")) [\n            #fx-block(id: \"specials-heading\")[\n              #block(width: 100%, above: 10pt, below: 5pt)[\n                #stack(dir: ltr, spacing: 6pt, rect(width: 3pt, height: 11pt, fill: theme.accent, radius: if theme.radius == 0pt { 0pt } else { 1.5pt }), text(size: 12.5pt, weight: \"bold\", fill: theme.primary, font: theme.font-heading)[#(\"Suggestions du Jour\")])\n                #v(2pt)\n                #text(size: 8.5pt, fill: theme.muted)[#(fx-str(fx-get(data, \"document.dayOfWeek\")) + \" \" + fx-date(fx-get(data, \"document.date\")))]\n              ]\n            ]\n          ]\n          #if fx-truthy(fx-get(data, \"menu.dailySpecials\")) [\n            #fx-block(id: \"specials-table\")[\n              #fx-table(\n                columns: (1.2fr, 2fr, 0.6fr,),\n                headers: (\"Suggestion\", \"Accompagnement\", \"Prix\",),\n                aligns: (\"left\", \"left\", \"right\",),\n                striped: true,\n                rows: fx-list(data, \"menu.dailySpecials\").map(item_0 =\u003e (\n                  fx-str(fx-get(item_0, \"name\")),\n                  fx-str(fx-get(item_0, \"description\")),\n                  fx-money(fx-get(item_0, \"price\"), currency: fx-str(fx-get(data, \"document.currency\"), default: \"EUR\")),\n                )),\n                theme: theme,\n              )\n            ]\n          ]\n          #if fx-truthy(fx-get(data, \"menu.formulas\")) [\n            #fx-block(id: \"formulas-heading\")[\n              #block(width: 100%, above: 10pt, below: 5pt)[\n                #stack(dir: ltr, spacing: 6pt, rect(width: 3pt, height: 11pt, fill: theme.accent, radius: if theme.radius == 0pt { 0pt } else { 1.5pt }), text(size: 12.5pt, weight: \"bold\", fill: theme.primary, font: theme.font-heading)[#(\"Formules \u0026 Menus\")])\n              ]\n            ]\n          ]\n          #if fx-truthy(fx-get(data, \"menu.formulas\")) [\n            #fx-block(id: \"formulas-repeat\")[\n              #for item_0 in fx-list(data, \"menu.formulas\") [\n                #fx-block(id: \"formula-card\")[\n                  #fx-card(title: fx-str(fx-get(item_0, \"name\")) + \" — \" + fx-money(fx-get(item_0, \"price\"), currency: fx-str(fx-get(data, \"document.currency\"), default: \"EUR\")), eyebrow: fx-str(fx-get(item_0, \"description\")), accent: true, theme: theme)[\n                  ]\n                ]\n                #v(6pt)\n              ]\n            ]\n          ]\n        ]\n      ]\n    ],\n    [\n      #fx-block(id: \"menu-right-col\")[\n        #fx-card(theme: theme)[\n          #if fx-truthy(fx-get(data, \"menu.sections\")) [\n            #fx-block(id: \"sections-repeat\")[\n              #for item_0 in fx-list(data, \"menu.sections\") [\n                #fx-block(id: \"section-heading\")[\n                  #block(width: 100%, above: 10pt, below: 5pt)[\n                    #stack(dir: ltr, spacing: 6pt, rect(width: 3pt, height: 11pt, fill: theme.accent, radius: if theme.radius == 0pt { 0pt } else { 1.5pt }), text(size: 12.5pt, weight: \"bold\", fill: theme.primary, font: theme.font-heading)[#(fx-str(fx-get(item_0, \"title\")))])\n                    #v(2pt)\n                    #text(size: 8.5pt, fill: theme.muted)[#(fx-str(fx-get(item_0, \"description\")))]\n                  ]\n                ]\n                #fx-block(id: \"section-items-table\")[\n                  #fx-table(\n                    columns: (1.2fr, 2fr, 0.6fr,),\n                    headers: (\"Plat\", \"Description\", \"Prix\",),\n                    aligns: (\"left\", \"left\", \"right\",),\n                    striped: true,\n                    rows: fx-list(item_0, \"items\").map(item_1 =\u003e (\n                      fx-str(fx-get(item_1, \"name\")),\n                      fx-str(fx-get(item_1, \"description\")),\n                      fx-money(fx-get(item_1, \"price\"), currency: fx-str(fx-get(data, \"document.currency\"), default: \"EUR\")),\n                    )),\n                    theme: theme,\n                  )\n                ]\n                #v(8pt)\n              ]\n            ]\n          ]\n        ]\n      ]\n    ],\n  )\n]\n\n#if fx-truthy(fx-get(data, \"menu.footnote\")) [\n  #fx-block(id: \"menu-footnote\")[\n    #block(width: 100%)[#align(center)[#text(size: 8pt, fill: theme.muted)[#(fx-str(fx-get(data, \"menu.footnote\")))]]]\n  ]\n]\n",
+    "blueprint": {
+      "version": "1.0",
+      "meta": {
+        "title": "Nouveau document",
+        "description": "Document créé avec fX Studio Builder v2",
+        "category": "document",
+        "locale": "fr-FR"
+      },
+      "theme": {
+        "preset": "swiss-minimal",
+        "overrides": {
+          "primary": "#1d4ed8",
+          "accent": "#0f766e",
+          "fontHeading": "Open Sans",
+          "fontBody": "Open Sans",
+          "density": "compact"
+        }
+      },
+      "page": {
+        "paper": "a4",
+        "margin": {
+          "top": "1.2cm",
+          "bottom": "1.2cm",
+          "left": "1.5cm",
+          "right": "1.5cm"
+        }
+      },
+      "footer": {
+        "left": "{{establishment.name}} — {{establishment.address}}",
+        "center": "{{establishment.phone}} • {{establishment.website}}",
+        "showPageNumbers": true
+      },
+      "blocks": [
+        {
+          "id": "doc-header",
+          "type": "header",
+          "props": {
+            "alignMode": "center",
+            "badge": "{{document.service}}",
+            "eyebrow": "{{establishment.name}} — {{establishment.category}}",
+            "meta": [
+              {
+                "label": "Jour",
+                "value": "{{document.dayOfWeek}}"
+              },
+              {
+                "label": "Date",
+                "value": "{{document.date | date}}"
+              },
+              {
+                "label": "Référence",
+                "value": "{{document.reference}}"
+              }
+            ],
+            "subtitle": "{{document.subtitle}}",
+            "title": "{{document.title}}"
+          }
+        },
+        {
+          "id": "doc-intro",
+          "type": "text",
+          "visibleIf": "document.summary",
+          "props": {
+            "align": "center",
+            "content": "{{document.summary}}",
+            "italic": true,
+            "muted": true,
+            "size": "9.5pt"
+          }
+        },
+        {
+          "id": "establishment-info",
+          "type": "kv_grid",
+          "props": {
+            "columns": 3,
+            "items": [
+              {
+                "label": "Horaires",
+                "value": "{{establishment.openingHours}}"
+              },
+              {
+                "label": "Réservations",
+                "value": "{{establishment.phone}}"
+              },
+              {
+                "label": "Adresse",
+                "value": "{{establishment.address}}"
+              }
+            ]
+          }
+        },
+        {
+          "id": "intro-divider",
+          "type": "divider",
+          "props": {
+            "style": "accent"
+          }
+        },
+        {
+          "id": "menu-columns",
+          "type": "columns",
+          "props": {
+            "gap": "10pt",
+            "widths": [
+              "1fr",
+              "1.25fr"
+            ]
+          },
+          "children": [
+            {
+              "id": "menu-left-col",
+              "type": "card",
+              "props": {
+                "accent": false
+              },
+              "children": [
+                {
+                  "id": "specials-heading",
+                  "type": "heading",
+                  "visibleIf": "menu.dailySpecials",
+                  "props": {
+                    "level": 2,
+                    "subtitle": "{{document.dayOfWeek}} {{document.date | date}}",
+                    "text": "Suggestions du Jour"
+                  }
+                },
+                {
+                  "id": "specials-table",
+                  "type": "table",
+                  "visibleIf": "menu.dailySpecials",
+                  "props": {
+                    "columns": [
+                      {
+                        "align": "left",
+                        "field": "name",
+                        "header": "Suggestion",
+                        "width": "1.2fr"
+                      },
+                      {
+                        "align": "left",
+                        "field": "description",
+                        "header": "Accompagnement",
+                        "width": "2fr"
+                      },
+                      {
+                        "align": "right",
+                        "field": "price",
+                        "format": "money:$root.document.currency",
+                        "header": "Prix",
+                        "width": "0.6fr"
+                      }
+                    ],
+                    "rowsPath": "menu.dailySpecials",
+                    "striped": true
+                  }
+                },
+                {
+                  "id": "formulas-heading",
+                  "type": "heading",
+                  "visibleIf": "menu.formulas",
+                  "props": {
+                    "level": 2,
+                    "text": "Formules \u0026 Menus"
+                  }
+                },
+                {
+                  "id": "formulas-repeat",
+                  "type": "repeat",
+                  "visibleIf": "menu.formulas",
+                  "props": {
+                    "divider": false,
+                    "gap": "6pt",
+                    "path": "menu.formulas"
+                  },
+                  "children": [
+                    {
+                      "id": "formula-card",
+                      "type": "card",
+                      "props": {
+                        "accent": true,
+                        "eyebrow": "{{description}}",
+                        "title": "{{name}} — {{price | money:$root.document.currency}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "menu-right-col",
+              "type": "card",
+              "props": {
+                "accent": false
+              },
+              "children": [
+                {
+                  "id": "sections-repeat",
+                  "type": "repeat",
+                  "visibleIf": "menu.sections",
+                  "props": {
+                    "divider": false,
+                    "gap": "8pt",
+                    "path": "menu.sections"
+                  },
+                  "children": [
+                    {
+                      "id": "section-heading",
+                      "type": "heading",
+                      "props": {
+                        "level": 2,
+                        "subtitle": "{{description}}",
+                        "text": "{{title}}"
+                      }
+                    },
+                    {
+                      "id": "section-items-table",
+                      "type": "table",
+                      "props": {
+                        "columns": [
+                          {
+                            "align": "left",
+                            "field": "name",
+                            "header": "Plat",
+                            "width": "1.2fr"
+                          },
+                          {
+                            "align": "left",
+                            "field": "description",
+                            "header": "Description",
+                            "width": "2fr"
+                          },
+                          {
+                            "align": "right",
+                            "field": "price",
+                            "format": "money:$root.document.currency",
+                            "header": "Prix",
+                            "width": "0.6fr"
+                          }
+                        ],
+                        "rowsPath": "items",
+                        "striped": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "menu-footnote",
+          "type": "text",
+          "visibleIf": "menu.footnote",
+          "props": {
+            "align": "center",
+            "content": "{{menu.footnote}}",
+            "muted": true,
+            "size": "8pt"
+          }
+        }
+      ]
+    },
+    "schema": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"MenuDocument\",\n  \"type\": \"object\",\n  \"required\": [\n    \"establishment\",\n    \"document\",\n    \"menu\"\n  ],\n  \"properties\": {\n    \"establishment\": {\n      \"type\": \"object\",\n      \"description\": \"Informations générales sur l'établissement.\",\n      \"required\": [\n        \"name\",\n        \"address\"\n      ],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\",\n          \"description\": \"Nom de l'établissement.\",\n          \"example\": \"Le Bistrot du Marché\"\n        },\n        \"category\": {\n          \"type\": \"string\",\n          \"description\": \"Type d'établissement (bistrot, brasserie, restaurant gastronomique, etc.).\",\n          \"example\": \"Bistrot traditionnel\"\n        },\n        \"address\": {\n          \"type\": \"string\",\n          \"description\": \"Adresse postale complète.\",\n          \"example\": \"14 Rue des Halles, 69001 Lyon\"\n        },\n        \"phone\": {\n          \"type\": \"string\",\n          \"description\": \"Numéro de téléphone pour les réservations.\",\n          \"example\": \"+33 4 78 12 34 56\"\n        },\n        \"email\": {\n          \"type\": \"string\",\n          \"format\": \"email\",\n          \"description\": \"Adresse e-mail de contact.\",\n          \"example\": \"contact@bistrotdumarche.fr\"\n        },\n        \"website\": {\n          \"type\": \"string\",\n          \"format\": \"uri\",\n          \"description\": \"Site web officiel de l'établissement.\",\n          \"example\": \"https://www.bistrotdumarche.fr\"\n        },\n        \"openingHours\": {\n          \"type\": \"string\",\n          \"description\": \"Horaires d'ouverture affichés sur le menu.\",\n          \"example\": \"Du mardi au dimanche, 12h00-14h30 et 19h00-22h30\"\n        }\n      }\n    },\n    \"document\": {\n      \"type\": \"object\",\n      \"description\": \"Métadonnées du document de menu.\",\n      \"required\": [\n        \"title\",\n        \"date\",\n        \"dayOfWeek\",\n        \"service\",\n        \"status\",\n        \"currency\"\n      ],\n      \"properties\": {\n        \"title\": {\n          \"type\": \"string\",\n          \"description\": \"Titre principal du menu.\",\n          \"example\": \"Menu du Jour\"\n        },\n        \"subtitle\": {\n          \"type\": \"string\",\n          \"description\": \"Sous-titre ou accroche saisonnière.\",\n          \"example\": \"Cuisine de saison et produits locaux\"\n        },\n        \"reference\": {\n          \"type\": \"string\",\n          \"description\": \"Référence interne du document.\",\n          \"example\": \"MENU-2026-1122\"\n        },\n        \"status\": {\n          \"type\": \"string\",\n          \"enum\": [\n            \"BROUILLON\",\n            \"PUBLIE\",\n            \"ARCHIVE\"\n          ],\n          \"description\": \"Statut de publication du menu.\",\n          \"example\": \"PUBLIE\"\n        },\n        \"date\": {\n          \"type\": \"string\",\n          \"format\": \"date\",\n          \"description\": \"Date d'application du menu.\",\n          \"example\": \"2026-11-22\"\n        },\n        \"dayOfWeek\": {\n          \"type\": \"string\",\n          \"enum\": [\n            \"Lundi\",\n            \"Mardi\",\n            \"Mercredi\",\n            \"Jeudi\",\n            \"Vendredi\",\n            \"Samedi\",\n            \"Dimanche\"\n          ],\n          \"description\": \"Jour de la semaine correspondant au menu.\",\n          \"example\": \"Dimanche\"\n        },\n        \"service\": {\n          \"type\": \"string\",\n          \"enum\": [\n            \"Déjeuner\",\n            \"Dîner\",\n            \"Brunch\",\n            \"Journée complète\"\n          ],\n          \"description\": \"Service concerné par ce menu.\",\n          \"example\": \"Déjeuner\"\n        },\n        \"currency\": {\n          \"type\": \"string\",\n          \"enum\": [\n            \"EUR\",\n            \"CHF\",\n            \"CAD\"\n          ],\n          \"description\": \"Devise utilisée pour l'affichage des prix.\",\n          \"example\": \"EUR\"\n        },\n        \"summary\": {\n          \"type\": \"string\",\n          \"description\": \"Mot du chef ou présentation courte.\",\n          \"example\": \"Tous nos plats sont préparés sur place à partir de produits frais du marché.\"\n        }\n      }\n    },\n    \"menu\": {\n      \"type\": \"object\",\n      \"description\": \"Contenu détaillé de la carte et des formules.\",\n      \"required\": [\n        \"sections\"\n      ],\n      \"properties\": {\n        \"dailySpecials\": {\n          \"type\": \"array\",\n          \"description\": \"Suggestions ou plats du jour mis en avant.\",\n          \"items\": {\n            \"type\": \"object\",\n            \"required\": [\n              \"name\",\n              \"price\",\n              \"isAvailable\"\n            ],\n            \"properties\": {\n              \"name\": {\n                \"type\": \"string\",\n                \"description\": \"Nom de la suggestion.\",\n                \"example\": \"Blanquette de veau à l'ancienne\"\n              },\n              \"description\": {\n                \"type\": \"string\",\n                \"description\": \"Accompagnements et détails de préparation.\",\n                \"example\": \"Riz basmati parfumé et légumes glacés\"\n              },\n              \"price\": {\n                \"type\": \"number\",\n                \"description\": \"Prix TTC.\",\n                \"example\": 19.5\n              },\n              \"isAvailable\": {\n                \"type\": \"boolean\",\n                \"description\": \"Indique si le plat est actuellement disponible.\",\n                \"example\": true\n              }\n            }\n          }\n        },\n        \"formulas\": {\n          \"type\": \"array\",\n          \"description\": \"Formules et menus à prix fixe.\",\n          \"items\": {\n            \"type\": \"object\",\n            \"required\": [\n              \"name\",\n              \"price\",\n              \"includedCourses\"\n            ],\n            \"properties\": {\n              \"name\": {\n                \"type\": \"string\",\n                \"description\": \"Intitulé de la formule.\",\n                \"example\": \"Formule Bistrot\"\n              },\n              \"description\": {\n                \"type\": \"string\",\n                \"description\": \"Conditions ou précisions sur la formule.\",\n                \"example\": \"Servie uniquement le midi hors jours fériés\"\n              },\n              \"price\": {\n                \"type\": \"number\",\n                \"description\": \"Prix TTC de la formule.\",\n                \"example\": 24\n              },\n              \"includedCourses\": {\n                \"type\": \"array\",\n                \"description\": \"Liste des services inclus dans la formule.\",\n                \"items\": {\n                  \"type\": \"string\"\n                }\n              }\n            }\n          }\n        },\n        \"sections\": {\n          \"type\": \"array\",\n          \"description\": \"Catégories principales du menu (Entrées, Plats, Desserts, Boissons).\",\n          \"items\": {\n            \"type\": \"object\",\n            \"required\": [\n              \"title\",\n              \"items\"\n            ],\n            \"properties\": {\n              \"title\": {\n                \"type\": \"string\",\n                \"description\": \"Nom de la catégorie.\",\n                \"example\": \"Entrées\"\n              },\n              \"description\": {\n                \"type\": \"string\",\n                \"description\": \"Sous-titre optionnel de la catégorie.\",\n                \"example\": \"Pour bien commencer votre repas\"\n              },\n              \"items\": {\n                \"type\": \"array\",\n                \"description\": \"Liste des plats ou boissons de cette catégorie.\",\n                \"items\": {\n                  \"type\": \"object\",\n                  \"required\": [\n                    \"name\",\n                    \"price\",\n                    \"isAvailable\"\n                  ],\n                  \"properties\": {\n                    \"name\": {\n                      \"type\": \"string\",\n                      \"description\": \"Nom du plat ou de la boisson.\",\n                      \"example\": \"Velouté de potimarron aux éclats de châtaignes\"\n                    },\n                    \"description\": {\n                      \"type\": \"string\",\n                      \"description\": \"Description des ingrédients et de la préparation.\",\n                      \"example\": \"Crème fraîche fermière et croûtons dorés à l'ail\"\n                    },\n                    \"price\": {\n                      \"type\": \"number\",\n                      \"description\": \"Prix TTC.\",\n                      \"example\": 9.5\n                    },\n                    \"isAvailable\": {\n                      \"type\": \"boolean\",\n                      \"description\": \"Disponibilité en salle.\",\n                      \"example\": true\n                    },\n                    \"dietaryTags\": {\n                      \"type\": \"array\",\n                      \"description\": \"Mentions alimentaires particulières.\",\n                      \"items\": {\n                        \"type\": \"string\",\n                        \"enum\": [\n                          \"Végétarien\",\n                          \"Végan\",\n                          \"Sans gluten\",\n                          \"Sans lactose\",\n                          \"Fait maison\"\n                        ]\n                      }\n                    },\n                    \"allergens\": {\n                      \"type\": \"array\",\n                      \"description\": \"Allergènes majeurs présents dans le plat.\",\n                      \"items\": {\n                        \"type\": \"string\"\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"footnote\": {\n          \"type\": \"string\",\n          \"description\": \"Mentions légales ou informations complémentaires en pied de page.\",\n          \"example\": \"Prix nets en euros, service compris. Liste complète des allergènes disponible sur demande.\"\n        }\n      }\n    }\n  }\n}",
+    "sampleData": "{\n  \"establishment\": {\n    \"name\": \"Le Bistrot du Marché\",\n    \"category\": \"Bistrot traditionnel\",\n    \"address\": \"14 Rue des Halles, 69001 Lyon\",\n    \"phone\": \"+33 4 78 12 34 56\",\n    \"email\": \"contact@bistrotdumarche.fr\",\n    \"website\": \"https://www.bistrotdumarche.fr\",\n    \"openingHours\": \"Du mardi au dimanche, 12h00-14h30 et 19h00-22h30\"\n  },\n  \"document\": {\n    \"title\": \"Menu du Dimanche\",\n    \"subtitle\": \"Cuisine de saison et produits du terroir\",\n    \"reference\": \"MENU-2026-1122\",\n    \"status\": \"PUBLIE\",\n    \"date\": \"2026-11-22\",\n    \"dayOfWeek\": \"Dimanche\",\n    \"service\": \"Déjeuner\",\n    \"currency\": \"EUR\",\n    \"summary\": \"Notre chef compose chaque matin la carte selon les arrivages du marché local.\"\n  },\n  \"menu\": {\n    \"dailySpecials\": [\n      {\n        \"name\": \"Blanquette de veau à l'ancienne\",\n        \"description\": \"Mijotée aux petits légumes de saison, servie avec du riz pilaf\",\n        \"price\": 21.5,\n        \"isAvailable\": true\n      },\n      {\n        \"name\": \"Dos de cabillaud rôti au beurre blanc\",\n        \"description\": \"Purée de céleri-rave et poireaux fondants\",\n        \"price\": 23,\n        \"isAvailable\": true\n      }\n    ],\n    \"formulas\": [\n      {\n        \"name\": \"Formule Déjeuner\",\n        \"description\": \"Au choix parmi la carte du jour\",\n        \"price\": 26,\n        \"includedCourses\": [\n          \"Entrée + Plat\",\n          \"Plat + Dessert\"\n        ]\n      },\n      {\n        \"name\": \"Menu Complet du Dimanche\",\n        \"description\": \"Menu dégustation complet avec café offert\",\n        \"price\": 34,\n        \"includedCourses\": [\n          \"Entrée\",\n          \"Plat\",\n          \"Dessert\"\n        ]\n      }\n    ],\n    \"sections\": [\n      {\n        \"title\": \"Entrées\",\n        \"description\": \"Pour commencer en douceur\",\n        \"items\": [\n          {\n            \"name\": \"Velouté de potimarron aux châtaignes\",\n            \"description\": \"Crème fermière fouettée et croûtons dorés à l'huile d'olive\",\n            \"price\": 9.5,\n            \"isAvailable\": true,\n            \"dietaryTags\": [\n              \"Végétarien\",\n              \"Fait maison\"\n            ],\n            \"allergens\": [\n              \"Gluten\",\n              \"Lait\"\n            ]\n          },\n          {\n            \"name\": \"Terrine de campagne maison\",\n            \"description\": \"Pickles d'oignons rouges, cornichons et pain de campagne grillé\",\n            \"price\": 10.5,\n            \"isAvailable\": true,\n            \"dietaryTags\": [\n              \"Sans lactose\",\n              \"Fait maison\"\n            ],\n            \"allergens\": [\n              \"Gluten\",\n              \"Sulfites\"\n            ]\n          }\n        ]\n      },\n      {\n        \"title\": \"Plats principaux\",\n        \"description\": \"Viandes françaises et poissons de nos côtes\",\n        \"items\": [\n          {\n            \"name\": \"Suprême de volaille fermière aux morilles\",\n            \"description\": \"Gratin dauphinois fondant et haricots verts\",\n            \"price\": 22,\n            \"isAvailable\": true,\n            \"dietaryTags\": [\n              \"Sans gluten\",\n              \"Fait maison\"\n            ],\n            \"allergens\": [\n              \"Lait\",\n              \"Sulfites\"\n            ]\n          },\n          {\n            \"name\": \"Risotto crémeux aux champignons des bois\",\n            \"description\": \"Riz Carnaroli, parmesan affiné 24 mois et huile de truffe\",\n            \"price\": 18.5,\n            \"isAvailable\": true,\n            \"dietaryTags\": [\n              \"Végétarien\",\n              \"Sans gluten\"\n            ],\n            \"allergens\": [\n              \"Lait\",\n              \"Céleri\"\n            ]\n          }\n        ]\n      },\n      {\n        \"title\": \"Desserts\",\n        \"description\": \"Douceurs préparées par notre pâtissier\",\n        \"items\": [\n          {\n            \"name\": \"Tarte Tatin tiède\",\n            \"description\": \"Pommes caramélisées au beurre demi-sel et crème crue d'Isigny\",\n            \"price\": 8.5,\n            \"isAvailable\": true,\n            \"dietaryTags\": [\n              \"Végétarien\",\n              \"Fait maison\"\n            ],\n            \"allergens\": [\n              \"Gluten\",\n              \"Lait\"\n            ]\n          },\n          {\n            \"name\": \"Mousse au chocolat noir 70 %\",\n            \"description\": \"Chocolat Grand Cru et tuile croustillante aux amandes\",\n            \"price\": 8,\n            \"isAvailable\": true,\n            \"dietaryTags\": [\n              \"Végétarien\",\n              \"Fait maison\"\n            ],\n            \"allergens\": [\n              \"Oeufs\",\n              \"Fruits à coque\"\n            ]\n          }\n        ]\n      }\n    ],\n    \"footnote\": \"Prix nets TTC en euros, service compris. Viandes d'origine France. La liste complète des allergènes est disponible sur demande auprès de votre serveur.\"\n  }\n}"
+  }
+}

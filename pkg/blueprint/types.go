@@ -36,13 +36,16 @@ type Meta struct {
 	Modules     []string `json:"modules,omitempty"`
 }
 
-// ThemeConfig selects a built-in design system preset plus optional token overrides.
+// ThemeConfig selects a built-in design system preset (or "custom" for an
+// AI-enriched bespoke theme) plus optional token overrides.
 type ThemeConfig struct {
 	Preset    string      `json:"preset"`
+	Name      string      `json:"name,omitempty"`
 	Overrides ThemeTokens `json:"overrides,omitempty"`
 }
 
-// ThemeTokens overrides individual visual tokens of a theme preset.
+// ThemeTokens overrides individual visual tokens of a theme preset or defines
+// the complete visual identity of a "custom" theme.
 type ThemeTokens struct {
 	Primary     string `json:"primary,omitempty"`
 	Accent      string `json:"accent,omitempty"`
@@ -51,11 +54,18 @@ type ThemeTokens struct {
 	Text        string `json:"text,omitempty"`
 	Muted       string `json:"muted,omitempty"`
 	Border      string `json:"border,omitempty"`
+	Success     string `json:"success,omitempty"`
+	Warning     string `json:"warning,omitempty"`
+	Danger      string `json:"danger,omitempty"`
+	Info        string `json:"info,omitempty"`
 	FontHeading string `json:"fontHeading,omitempty"`
 	FontBody    string `json:"fontBody,omitempty"`
 	FontMono    string `json:"fontMono,omitempty"`
+	FontSize    string `json:"fontSize,omitempty"`
 	Radius      string `json:"radius,omitempty"`
+	BorderWidth string `json:"borderWidth,omitempty"`
 	Density     string `json:"density,omitempty"`
+	IsDark      *bool  `json:"isDark,omitempty"`
 }
 
 // PageConfig specifies page geometry and margins.
@@ -211,12 +221,22 @@ func (bp *Blueprint) Validate() []string {
 	validateColor("text", ov.Text)
 	validateColor("muted", ov.Muted)
 	validateColor("border", ov.Border)
+	validateColor("success", ov.Success)
+	validateColor("warning", ov.Warning)
+	validateColor("danger", ov.Danger)
+	validateColor("info", ov.Info)
 
 	if ov.Density != "" && !validDensities[ov.Density] {
 		errs = append(errs, fmt.Sprintf("theme.overrides.density: invalid density %q", ov.Density))
 	}
 	if ov.Radius != "" && !typstLengthRegex.MatchString(strings.TrimSpace(ov.Radius)) {
 		errs = append(errs, fmt.Sprintf("theme.overrides.radius: invalid length %q", ov.Radius))
+	}
+	if ov.BorderWidth != "" && (!typstLengthRegex.MatchString(strings.TrimSpace(ov.BorderWidth)) || strings.HasSuffix(strings.TrimSpace(ov.BorderWidth), "fr") || strings.HasSuffix(strings.TrimSpace(ov.BorderWidth), "%") || strings.TrimSpace(ov.BorderWidth) == "auto") {
+		errs = append(errs, fmt.Sprintf("theme.overrides.borderWidth: invalid length %q", ov.BorderWidth))
+	}
+	if ov.FontSize != "" && (!typstLengthRegex.MatchString(strings.TrimSpace(ov.FontSize)) || strings.HasSuffix(strings.TrimSpace(ov.FontSize), "fr") || strings.HasSuffix(strings.TrimSpace(ov.FontSize), "%") || strings.TrimSpace(ov.FontSize) == "auto") {
+		errs = append(errs, fmt.Sprintf("theme.overrides.fontSize: invalid length %q", ov.FontSize))
 	}
 
 	if bp.Page.Paper != "" && !validPapers[bp.Page.Paper] {

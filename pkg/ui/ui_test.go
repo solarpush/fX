@@ -58,8 +58,13 @@ func TestStdlibEmbedded(t *testing.T) {
 
 func TestThemesSyncWithStdlib(t *testing.T) {
 	themes := ListThemes()
-	if len(themes) != 5 {
-		t.Fatalf("expected 5 built-in themes, got %d", len(themes))
+	if len(themes) != 6 {
+		t.Fatalf("expected 6 built-in themes (custom + 5 presets), got %d", len(themes))
+	}
+
+	customTheme, ok := GetTheme("custom")
+	if !ok || !customTheme.IsCustom {
+		t.Fatalf("expected custom theme to be registered with IsCustom=true, got %+v (ok=%v)", customTheme, ok)
 	}
 
 	allowedFonts := map[string]bool{}

@@ -142,6 +142,9 @@ func (c *Client) chatCompletion(ctx context.Context, messages []chatMessage) (st
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if c.isCLIProvider() {
+		return c.chatCompletionCLI(ctx, messages)
+	}
 	if strings.EqualFold(strings.TrimSpace(c.config.Provider), "ollama") {
 		return c.chatCompletionOllama(ctx, messages)
 	}
@@ -671,7 +674,11 @@ func (c *Client) generateStudioBlueprint(ctx context.Context, req StudioGenerate
 		jsonStr := extractJSONObject(rawResp)
 		var env blueprintAIEnvelope
 		if err := json.Unmarshal([]byte(jsonStr), &env); err != nil {
-			lastErrors = []string{fmt.Sprintf("invalid JSON response: %v", err)}
+			snippet := strings.Join(strings.Fields(rawResp), " ")
+			if len(snippet) > 180 {
+				snippet = snippet[:180] + "..."
+			}
+			lastErrors = []string{fmt.Sprintf("invalid JSON response: %v (received: %q)", err, snippet)}
 			messages = append(messages,
 				chatMessage{Role: "assistant", Text: rawResp},
 				chatMessage{Role: "user", Text: formatBlueprintRetryFeedback(lastErrors, isEdit)},
@@ -1020,24 +1027,38 @@ func buildBlueprintSystemPrompt(isEdit bool, profile string) string {
 	sb.WriteString("OUTPUT FORMAT (CRITICAL):\n")
 	sb.WriteString("- Respond with ONLY a single valid JSON object. No markdown code fences, no prose before or after.\n")
 	if isEdit {
-		sb.WriteString("- You are editing an EXISTING Blueprint. Prefer minimal, targeted, non-destructive edits:\n")
+		sb.WriteString("- You are editing an EXISTING Blueprint. For targeted updates to an existing document, prefer non-destructive patches:\n")
 		sb.WriteString(`  {"explanation": "Short summary of edits", "patches": [ ... ]}` + "\n")
-		sb.WriteString("- ONLY if the user explicitly asks for a complete redesign from scratch, you may return:\n")
+		sb.WriteString("- If the user asks to create a brand-new document type from scratch, replace a blank starter document, or do a full redesign, return a complete Blueprint:\n")
 		sb.WriteString(`  {"explanation": "Short summary", "blueprint": {"version": "1.0", ...}}` + "\n")
 		sb.WriteString("\nSUPPORTED PATCH OPERATIONS:\n")
-		sb.WriteString(`- set_theme: {"op":"set_theme","theme":{"preset":"swiss-minimal","overrides":{"primary":"#2563eb"}}}` + "\n")
+		sb.WriteString(`- set_theme: {"op":"set_theme","theme":{"preset":"custom","name":"Nom du thème","overrides":{"bg":"#fdfaf5","surface":"#f5efe6","text":"#2c2520","muted":"#786b60","primary":"#2f5d50","accent":"#c26d4a","border":"#dfd5c8","fontHeading":"Liberation Serif","fontBody":"Open Sans","fontSize":"11pt","radius":"6pt","borderWidth":"0.75pt","density":"relaxed"}}}` + "\n")
+		sb.WriteString("  NOTE: `set_theme` with preset=\"custom\" (or empty preset) INCREMENTALLY MERGES/ENRICHES existing custom tokens without erasing prior overrides!\n")
 		sb.WriteString(`- set_page: {"op":"set_page","page":{"paper":"a4","flipped":false,"margin":{"top":"1.8cm","bottom":"1.8cm","left":"1.8cm","right":"1.8cm"}}}` + "\n")
 		sb.WriteString(`- set_header: {"op":"set_header","header":{"left":"...","center":"...","right":"...","showPageNumbers":false}}` + " (or header:null to remove)\n")
 		sb.WriteString(`- set_footer: {"op":"set_footer","footer":{"left":"...","center":"...","right":"...","showPageNumbers":true}}` + " (or footer:null to remove)\n")
-		sb.WriteString(`- add_block: {"op":"add_block","parentId":"optional-container-id","index":0,"block":{"id":"unique-id","type":"...","props":{...}}}` + "\n")
-		sb.WriteString(`- update_block: {"op":"update_block","blockId":"existing-id","props":{"key":"value"},"visibleIf":"optional"}` + " (set a prop to null to delete it)\n")
+		sb.WriteString(`- add_block: {"op":"add_block","parentId":"optional-container-id","index":0,"block":{"id":"unique-id","type":"...","style":{...},"props":{...}}}` + "\n")
+		sb.WriteString(`- update_block: {"op":"update_block","blockId":"existing-id","props":{"key":"value"},"style":{"bg":"#...","padding":"10pt"},"visibleIf":"optional"}` + " (set a prop to null to delete it)\n")
 		sb.WriteString(`- remove_block: {"op":"remove_block","blockId":"existing-id"}` + "\n")
 		sb.WriteString(`- move_block: {"op":"move_block","blockId":"existing-id","parentId":"optional","index":0}` + "\n")
 		sb.WriteString(`- replace_blocks: {"op":"replace_blocks","blocks":[...]}` + "\n")
 	} else {
 		sb.WriteString("- Return a complete, valid Blueprint inside this JSON envelope:\n")
-		sb.WriteString(`  {"explanation": "Short summary of design", "blueprint": {"version": "1.0", "meta": {...}, "theme": {"preset": "..."}, "page": {"paper": "a4", "margin": {"top": "1.8cm", "bottom": "1.8cm", "left": "1.8cm", "right": "1.8cm"}}, "footer": {"showPageNumbers": true}, "blocks": [...]}}` + "\n")
+		sb.WriteString(`  {"explanation": "Short summary of design", "blueprint": {"version": "1.0", "meta": {...}, "theme": {"preset": "custom", "name": "Evocative Theme Name", "overrides": {...}}, "page": {"paper": "a4", "margin": {"top": "1.8cm", "bottom": "1.8cm", "left": "1.8cm", "right": "1.8cm"}}, "footer": {"showPageNumbers": true}, "blocks": [...]}}` + "\n")
 	}
+
+	// Custom theme ownership & design direction.
+	sb.WriteString("\nCUSTOM THEME OWNERSHIP & ENRICHMENT (IMPORTANT):\n")
+	sb.WriteString("- You have direct creative ownership over the document's visual identity via the dedicated `\"preset\": \"custom\"` theme.\n")
+	sb.WriteString("- Whenever you design a domain-specific or bespoke document (menus, hospitality, senior care, medical, editorial, brochures, certificates, branded reports) OR whenever the user asks to improve, personalize, or enrich the visual style, ALWAYS use `\"preset\": \"custom\"` with:\n")
+	sb.WriteString("  1. `theme.name`: an evocative human-readable theme title matching the document domain & mood (in the user's language, e.g. \"Résidence Les Mimosas — Chaleureux\").\n")
+	sb.WriteString("  2. `theme.overrides`: a harmonious, high-contrast set of design tokens tailored to the audience and purpose:\n")
+	sb.WriteString("     - Palette (hex #RRGGBB): `bg`, `surface`, `text`, `muted`, `primary`, `accent`, `border`, plus optional semantic tones `success`, `warning`, `danger`, `info`.\n")
+	sb.WriteString("     - Typography (Alpine-safe fonts ONLY): `fontHeading`, `fontBody`, `fontMono`, `fontSize` (e.g. \"9.5pt\" standard, \"11pt\"–\"12pt\" for high readability / senior audiences, \"8.5pt\" for dense tabular invoices).\n")
+	sb.WriteString("     - Geometry & rhythm: `radius` (e.g. \"0pt\"–\"12pt\"), `borderWidth` (e.g. \"0pt\", \"0.6pt\", \"1pt\", \"1.5pt\"), `density` (\"compact\" | \"comfortable\" | \"relaxed\"), optional `isDark` (boolean, auto-detected from `bg` luminance if omitted).\n")
+	sb.WriteString("- Ensure strong text legibility and contrast between `text` and `bg`/`surface`.\n")
+	sb.WriteString("- In edit mode, when refining the visual style of an existing document, use `set_theme` with `\"preset\": \"custom\"` to enrich/evolve the custom tokens incrementally rather than leaving everything generic.\n")
+	sb.WriteString("- Only pick one of the 5 static presets below if the user explicitly asks for that preset by name.\n")
 
 	// Dynamic theme presets from pkg/ui.
 	sb.WriteString("\nVALID THEME PRESETS (theme.preset):\n")
@@ -1056,7 +1077,7 @@ func buildBlueprintSystemPrompt(isEdit bool, profile string) string {
 	sb.WriteString("- NEVER use proprietary or missing fonts (no Arial, Helvetica, Times New Roman, Inter, Roboto, sans-serif, serif).\n")
 	sb.WriteString("- Theme override colors MUST be hex (#RGB, #RRGGBB, or #RRGGBBAA). Density MUST be compact, comfortable, or relaxed.\n")
 	sb.WriteString("- Valid page.paper values: a3, a4, a5, us-letter, us-legal, presentation-16-9, presentation-4-3.\n")
-	sb.WriteString("- Lengths MUST match `auto` or `<number>(pt|mm|cm|in|em|fr|%)` (e.g. \"1.8cm\", \"12pt\", \"4pt\").\n")
+	sb.WriteString("- Lengths MUST match `auto` or `<number>(pt|mm|cm|in|em|fr|%)` (e.g. \"1.8cm\", \"12pt\", \"4pt\"). Note: `fontSize` and `borderWidth` MUST use concrete units like `pt` or `mm` (never `auto`, `%`, or `fr`).\n")
 
 	// Dynamic block catalog from pkg/ui.
 	sb.WriteString("\nVALID BLOCK TYPES & PROPS (every block MUST have a unique non-empty \"id\"):\n")
@@ -1081,6 +1102,9 @@ func buildBlueprintSystemPrompt(isEdit bool, profile string) string {
 			sb.WriteString("  props: " + strings.Join(parts, ", ") + "\n")
 		}
 	}
+
+	sb.WriteString("\nOPTIONAL PER-BLOCK STYLE (block.style on any block, or patch.style on update_block):\n")
+	sb.WriteString("- `marginTop`, `marginBottom`, `padding`, `radius` (lengths e.g. \"10pt\"), `width` (\"100%\", \"75%\", \"auto\"), `align` (\"left\"|\"center\"|\"right\"), `bg`, `color`, `border` (hex colors), `keepTogether` (boolean to prevent splitting across pages).\n")
 
 	sb.WriteString("\nDATA BINDINGS, FILTERS & VISIBILITY:\n")
 	sb.WriteString("- Interpolate schema fields via `{{path.to.field}}`.\n")
@@ -1145,8 +1169,9 @@ func buildTypstSystemPrompt(profile string) string {
 	sb.WriteString("2. ALWAYS begin with:\n")
 	sb.WriteString("   #import \"/_fx/ui.typ\": *\n")
 	sb.WriteString("   #let data = json(\"data.json\")\n")
-	sb.WriteString("   #let theme = fx-theme(preset: \"swiss-minimal\", overrides: (:))\n")
+	sb.WriteString("   #let theme = fx-theme(preset: \"custom\", overrides: (bg: rgb(\"#ffffff\"), surface: rgb(\"#f8fafc\"), text: rgb(\"#0f172a\"), muted: rgb(\"#64748b\"), primary: rgb(\"#2563eb\"), accent: rgb(\"#0ea5e9\"), border: rgb(\"#e2e8f0\"), font-heading: \"Open Sans\", font-body: \"Open Sans\", font-size: 9.5pt, radius: 6pt, border-width: 0.75pt, density: \"comfortable\"))\n")
 	sb.WriteString("   #show: fx-doc.with(theme: theme, paper: \"a4\", margin: (top: 1.8cm, bottom: 1.8cm, left: 1.8cm, right: 1.8cm))\n")
+	sb.WriteString("   (Tailor the `preset: \"custom\"` overrides to match the document's domain, palette, and audience readability!)\n")
 	sb.WriteString("3. NEVER use Handlebars syntax (`{{...}}`, `{{#each}}`, `{{#if}}`). Use native Typst `#for item in fx-list(data, \"items\") [...]` and `#if fx-truthy(...) [...]`.\n")
 	sb.WriteString("4. Inside function parentheses `(...)`, you are ALREADY in code mode: do NOT put `#` before nested function calls (`align(center, rect(...))`, NOT `#align(center, #rect(...))`).\n")
 	sb.WriteString("5. Always read JSON values safely via `fx-get(data, \"a.b\")` and `fx-list(data, \"items\")` so missing optional fields never panic.\n")
@@ -1161,7 +1186,7 @@ func buildTypstSystemPrompt(profile string) string {
 
 	sb.WriteString("\n`/_fx/ui.typ` COMPONENT & HELPER CHEATSHEET:\n")
 	sb.WriteString("- Data helpers:\n")
-	sb.WriteString("  fx-theme(preset: \"swiss-minimal\", overrides: (:))\n")
+	sb.WriteString("  fx-theme(preset: \"custom\", overrides: (bg: rgb(...), surface: ..., text: ..., muted: ..., primary: ..., accent: ..., border: ..., success: ..., warning: ..., danger: ..., info: ..., font-heading: \"...\", font-body: \"...\", font-mono: \"...\", font-size: 10pt, radius: 6pt, border-width: 0.75pt, density: \"comfortable\", is-dark: false))\n")
 	sb.WriteString("  fx-get(dict, \"path.to.field\", default: none)\n")
 	sb.WriteString("  fx-list(dict, \"path.to.array\")\n")
 	sb.WriteString("  fx-str(val, default: \"\") | fx-truthy(val)\n")

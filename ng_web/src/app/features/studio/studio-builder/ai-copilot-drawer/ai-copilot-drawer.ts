@@ -93,10 +93,10 @@ export class AiCopilotDrawerComponent {
   protected readonly quickPrompts = computed(() => {
     const hasErr = !!this.compileError() || this.diagnostics().length > 0;
     const base = [
-      'Passer en thème Modern SaaS sombre avec accents cyan',
+      'Créer un thème custom sur-mesure (palette, polices, lisibilité) adapté à ce document',
+      'Enrichir le thème custom en ambiance chaleureuse et lisible (grande police, tons doux)',
       'Ajouter une ligne de 3 KPI financiers en haut du document',
       'Ajouter un encadré Callout avec mentions légales et 2 signatures en bas',
-      'Réorganiser l’en-tête en style éditorial élégant centré',
     ];
     if (hasErr) {
       return [

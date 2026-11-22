@@ -141,6 +141,7 @@ export class BlockInspectorComponent {
   readonly duplicateBlock = output<string>();
   readonly deleteBlock = output<string>();
   readonly themeChange = output<ThemeConfig>();
+  readonly enrichThemeWithAi = output<void>();
   readonly pageChange = output<PageConfig>();
   readonly headerFooterChange = output<{
     header: HeaderFooterConfig | null;
@@ -190,7 +191,27 @@ export class BlockInspectorComponent {
 
   protected readonly activeThemePreset = computed(() => {
     const id = this.blueprint().theme?.preset || 'swiss-minimal';
-    return this.effectiveThemes().find((t) => t.id === id) ?? this.effectiveThemes()[0];
+    return (
+      this.effectiveThemes().find((t) => t.id === id) ??
+      BUILT_IN_THEMES.find((t) => t.id === id) ??
+      this.effectiveThemes()[0]
+    );
+  });
+
+  protected readonly staticThemePresets = computed(() =>
+    this.effectiveThemes().filter((t) => t.id !== 'custom'),
+  );
+
+  protected readonly isCustomTheme = computed(
+    () => (this.blueprint().theme?.preset || 'swiss-minimal') === 'custom',
+  );
+
+  protected readonly activeThemeDisplayName = computed(() => {
+    const th = this.blueprint().theme;
+    if (th?.preset === 'custom') {
+      return th.name?.trim() || 'Thème Custom (IA)';
+    }
+    return this.activeThemePreset().name;
   });
 
   protected readonly arraySchemaPaths = computed(() =>
@@ -650,27 +671,61 @@ export class BlockInspectorComponent {
   // --- Document Root: Theme, Page, Running Chrome & Modules ---
 
   protected selectThemePreset(presetId: string): void {
+    const curr = this.blueprint().theme ?? { preset: 'swiss-minimal', overrides: {} };
+    if (presetId === 'custom') {
+      if (curr.preset === 'custom') return;
+      const base = this.activeThemePreset();
+      this.themeChange.emit({
+        preset: 'custom',
+        name: curr.name?.trim() || `${base.name} personnalisé`,
+        overrides: this.buildSeededTokens(base, curr.overrides),
+      });
+      return;
+    }
+
     this.themeChange.emit({
       preset: presetId,
-      overrides: { ...(this.blueprint().theme?.overrides ?? {}) },
+      overrides: {},
     });
   }
 
-  protected tokenValue(key: keyof ThemeTokens): string {
-    const ov = this.blueprint().theme?.overrides?.[key];
-    if (ov) return ov;
-    const preset = this.activeThemePreset();
-    return (preset[key as keyof ThemePresetInfo] as string) ?? '';
+  protected setCustomThemeName(name: string): void {
+    const curr = this.blueprint().theme ?? { preset: 'custom', overrides: {} };
+    const base = this.activeThemePreset();
+    this.themeChange.emit({
+      preset: 'custom',
+      name: name || undefined,
+      overrides: curr.preset === 'custom' ? { ...(curr.overrides ?? {}) } : this.buildSeededTokens(base, curr.overrides),
+    });
   }
 
-  protected setThemeToken(key: keyof ThemeTokens, value: string): void {
+  protected tokenValue(key: Exclude<keyof ThemeTokens, 'isDark'>): string {
+    const ov = this.blueprint().theme?.overrides?.[key];
+    if (typeof ov === 'string' && ov.trim()) return ov;
+    const preset = this.activeThemePreset();
+    const fallback = preset[key as keyof ThemePresetInfo];
+    if (typeof fallback === 'string' && fallback.trim()) return fallback;
+    if (key === 'fontSize') return '9.5pt';
+    if (key === 'borderWidth') return '0.75pt';
+    return '';
+  }
+
+  protected setThemeToken(key: Exclude<keyof ThemeTokens, 'isDark'>, value: string): void {
     const curr = this.blueprint().theme ?? { preset: 'swiss-minimal', overrides: {} };
-    const nextOverrides: ThemeTokens = { ...(curr.overrides ?? {}), [key]: value };
+    const base = this.activeThemePreset();
+    const nextOverrides: ThemeTokens =
+      curr.preset === 'custom'
+        ? { ...(curr.overrides ?? {}) }
+        : this.buildSeededTokens(base, curr.overrides);
+
     if (!value.trim()) {
       delete nextOverrides[key];
+    } else {
+      nextOverrides[key] = value;
     }
     this.themeChange.emit({
-      preset: curr.preset || 'swiss-minimal',
+      preset: 'custom',
+      name: curr.name?.trim() || (curr.preset === 'custom' ? undefined : `${base.name} personnalisé`),
       overrides: nextOverrides,
     });
   }
@@ -683,8 +738,32 @@ export class BlockInspectorComponent {
   }
 
   protected hasOverrides(): boolean {
-    const ov = this.blueprint().theme?.overrides;
-    return !!ov && Object.values(ov).some((v) => typeof v === 'string' && v.trim() !== '');
+    const th = this.blueprint().theme;
+    const ov = th?.overrides;
+    return (
+      !!th?.name?.trim() ||
+      (!!ov && Object.values(ov).some((v) => (typeof v === 'string' && v.trim() !== '') || typeof v === 'boolean'))
+    );
+  }
+
+  private buildSeededTokens(base: ThemePresetInfo, existing?: ThemeTokens): ThemeTokens {
+    return {
+      bg: base.bg,
+      surface: base.surface,
+      text: base.text,
+      muted: base.muted,
+      primary: base.primary,
+      accent: base.accent,
+      border: base.border,
+      fontHeading: base.fontHeading,
+      fontBody: base.fontBody,
+      fontMono: base.fontMono,
+      fontSize: base.fontSize || '9.5pt',
+      radius: base.radius,
+      borderWidth: base.borderWidth || '0.75pt',
+      density: base.density,
+      ...(existing ?? {}),
+    };
   }
 
   protected updatePage(patch: Partial<PageConfig>): void {

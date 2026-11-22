@@ -88,10 +88,14 @@ type AuthConfig struct {
 
 // AIConfig configuration pour la génération de templates par l'IA
 type AIConfig struct {
-	Provider string // "openai", "ollama", "gemini"
-	APIKey   string
-	BaseURL  string // Pour Ollama ou API custom
-	Model    string
+	Provider      string // "openai", "ollama", "gemini", "cli", "agy"
+	APIKey        string
+	BaseURL       string // Pour Ollama ou API custom
+	Model         string
+	CLICommand    string // Binaire CLI externe (ex: "agy", "claude", "gemini", "codex", "/chemin/ma-cli")
+	CLIArgs       string // Arguments CLI personnalisés (placeholders: {model}, {effort}, {prompt}, {image})
+	CLIEffort     string // Niveau de raisonnement optionnel (ex: "low", "medium", "high", "xhigh")
+	CLITimeoutSec int    // Timeout d'exécution CLI en secondes (défaut: 180)
 }
 
 // Load charge la configuration depuis les variables d'environnement
@@ -131,10 +135,14 @@ func Load() (*Config, error) {
 			Path:    getEnv("WEB_UI_PATH", "./web/ng"),    // Chemin des statiques d'Angular
 		},
 		AI: AIConfig{
-			Provider: getEnv("AI_PROVIDER", "ollama"),
-			APIKey:   getEnv("AI_API_KEY", ""),
-			BaseURL:  getEnv("AI_BASE_URL", "http://localhost:11434"),
-			Model:    getEnv("AI_MODEL", "llama3"),
+			Provider:      getEnv("AI_PROVIDER", "ollama"),
+			APIKey:        getEnv("AI_API_KEY", ""),
+			BaseURL:       getEnv("AI_BASE_URL", "http://localhost:11434"),
+			Model:         getEnv("AI_MODEL", "llama3"),
+			CLICommand:    getEnv("AI_CLI_COMMAND", ""),
+			CLIArgs:       getEnv("AI_CLI_ARGS", ""),
+			CLIEffort:     getEnv("AI_CLI_EFFORT", ""),
+			CLITimeoutSec: getEnvAsInt("AI_CLI_TIMEOUT", 180),
 		},
 		Features: FeaturesConfig{
 			AllowCustomTemplates: getEnvAsBool("ALLOW_CUSTOM_TEMPLATES", false),

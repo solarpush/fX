@@ -416,4 +416,74 @@ func TestLiveRustDaemon_AllPresetsThemesAndModules(t *testing.T) {
 			}
 		})
 	}
+
+	// 3. Render AI-enriched custom themes (light warm senior-friendly + dark auto-detected is-dark).
+	customCases := []struct {
+		name  string
+		theme blueprint.ThemeConfig
+	}{
+		{
+			name: "custom/warm-senior-light",
+			theme: blueprint.ThemeConfig{
+				Preset: "custom",
+				Name:   "Résidence Les Mimosas — Chaleureux",
+				Overrides: blueprint.ThemeTokens{
+					Bg:          "#fdfaf5",
+					Surface:     "#f5efe6",
+					Text:        "#2c2520",
+					Muted:       "#75685d",
+					Primary:     "#2f5d50",
+					Accent:      "#c26d4a",
+					Border:      "#dfd5c8",
+					Success:     "#2e7d32",
+					Warning:     "#b45309",
+					FontHeading: "Liberation Serif",
+					FontBody:    "Open Sans",
+					FontSize:    "11.5pt",
+					Radius:      "8pt",
+					BorderWidth: "1pt",
+					Density:     "relaxed",
+				},
+			},
+		},
+		{
+			name: "custom/midnight-auto-dark",
+			theme: blueprint.ThemeConfig{
+				Preset: "custom",
+				Name:   "Midnight Obsidian",
+				Overrides: blueprint.ThemeTokens{
+					Bg:          "#0f172a",
+					Surface:     "#1e293b",
+					Text:        "#f8fafc",
+					Muted:       "#94a3b8",
+					Primary:     "#38bdf8",
+					Accent:      "#f472b6",
+					Border:      "#334155",
+					FontHeading: "Open Sans",
+					FontBody:    "Open Sans",
+					FontSize:    "10pt",
+					Radius:      "6pt",
+					BorderWidth: "0.75pt",
+					Density:     "comfortable",
+				},
+			},
+		},
+	}
+	for _, tc := range customCases {
+		t.Run(tc.name, func(t *testing.T) {
+			bp := execPreset.Blueprint.Clone()
+			bp.Theme = tc.theme
+			res, err := engine.Render(ctx, &render.RenderRequest{
+				Blueprint: bp,
+				Data:      execPreset.SampleData,
+				Format:    render.FormatSVG,
+			})
+			if err != nil {
+				t.Fatalf("%s live SVG render failed: %v", tc.name, err)
+			}
+			if len(res.PagesSVG) == 0 {
+				t.Fatalf("%s produced 0 SVG pages", tc.name)
+			}
+		})
+	}
 }

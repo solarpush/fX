@@ -1,0 +1,262 @@
+{
+  "version": "1.0",
+  "meta": {
+    "title": "Nouveau document",
+    "description": "Document créé avec fX Studio Builder v2",
+    "category": "document",
+    "locale": "fr-FR"
+  },
+  "theme": {
+    "preset": "swiss-minimal",
+    "overrides": {
+      "primary": "#1d4ed8",
+      "accent": "#0f766e",
+      "fontHeading": "Open Sans",
+      "fontBody": "Open Sans",
+      "density": "compact"
+    }
+  },
+  "page": {
+    "paper": "a4",
+    "margin": {
+      "top": "1.2cm",
+      "bottom": "1.2cm",
+      "left": "1.5cm",
+      "right": "1.5cm"
+    }
+  },
+  "footer": {
+    "left": "{{establishment.name}} — {{establishment.address}}",
+    "center": "{{establishment.phone}} • {{establishment.website}}",
+    "showPageNumbers": true
+  },
+  "blocks": [
+    {
+      "id": "doc-header",
+      "type": "header",
+      "props": {
+        "alignMode": "center",
+        "badge": "{{document.service}}",
+        "eyebrow": "{{establishment.name}} — {{establishment.category}}",
+        "meta": [
+          {
+            "label": "Jour",
+            "value": "{{document.dayOfWeek}}"
+          },
+          {
+            "label": "Date",
+            "value": "{{document.date | date}}"
+          },
+          {
+            "label": "Référence",
+            "value": "{{document.reference}}"
+          }
+        ],
+        "subtitle": "{{document.subtitle}}",
+        "title": "{{document.title}}"
+      }
+    },
+    {
+      "id": "doc-intro",
+      "type": "text",
+      "visibleIf": "document.summary",
+      "props": {
+        "align": "center",
+        "content": "{{document.summary}}",
+        "italic": true,
+        "muted": true,
+        "size": "9.5pt"
+      }
+    },
+    {
+      "id": "establishment-info",
+      "type": "kv_grid",
+      "props": {
+        "columns": 3,
+        "items": [
+          {
+            "label": "Horaires",
+            "value": "{{establishment.openingHours}}"
+          },
+          {
+            "label": "Réservations",
+            "value": "{{establishment.phone}}"
+          },
+          {
+            "label": "Adresse",
+            "value": "{{establishment.address}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "intro-divider",
+      "type": "divider",
+      "props": {
+        "style": "accent"
+      }
+    },
+    {
+      "id": "menu-columns",
+      "type": "columns",
+      "props": {
+        "gap": "10pt",
+        "widths": [
+          "1fr",
+          "1.25fr"
+        ]
+      },
+      "children": [
+        {
+          "id": "menu-left-col",
+          "type": "card",
+          "props": {
+            "accent": false
+          },
+          "children": [
+            {
+              "id": "specials-heading",
+              "type": "heading",
+              "visibleIf": "menu.dailySpecials",
+              "props": {
+                "level": 2,
+                "subtitle": "{{document.dayOfWeek}} {{document.date | date}}",
+                "text": "Suggestions du Jour"
+              }
+            },
+            {
+              "id": "specials-table",
+              "type": "table",
+              "visibleIf": "menu.dailySpecials",
+              "props": {
+                "columns": [
+                  {
+                    "align": "left",
+                    "field": "name",
+                    "header": "Suggestion",
+                    "width": "1.2fr"
+                  },
+                  {
+                    "align": "left",
+                    "field": "description",
+                    "header": "Accompagnement",
+                    "width": "2fr"
+                  },
+                  {
+                    "align": "right",
+                    "field": "price",
+                    "format": "money:$root.document.currency",
+                    "header": "Prix",
+                    "width": "0.6fr"
+                  }
+                ],
+                "rowsPath": "menu.dailySpecials",
+                "striped": true
+              }
+            },
+            {
+              "id": "formulas-heading",
+              "type": "heading",
+              "visibleIf": "menu.formulas",
+              "props": {
+                "level": 2,
+                "text": "Formules \u0026 Menus"
+              }
+            },
+            {
+              "id": "formulas-repeat",
+              "type": "repeat",
+              "visibleIf": "menu.formulas",
+              "props": {
+                "divider": false,
+                "gap": "6pt",
+                "path": "menu.formulas"
+              },
+              "children": [
+                {
+                  "id": "formula-card",
+                  "type": "card",
+                  "props": {
+                    "accent": true,
+                    "eyebrow": "{{description}}",
+                    "title": "{{name}} — {{price | money:$root.document.currency}}"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "menu-right-col",
+          "type": "card",
+          "props": {
+            "accent": false
+          },
+          "children": [
+            {
+              "id": "sections-repeat",
+              "type": "repeat",
+              "visibleIf": "menu.sections",
+              "props": {
+                "divider": false,
+                "gap": "8pt",
+                "path": "menu.sections"
+              },
+              "children": [
+                {
+                  "id": "section-heading",
+                  "type": "heading",
+                  "props": {
+                    "level": 2,
+                    "subtitle": "{{description}}",
+                    "text": "{{title}}"
+                  }
+                },
+                {
+                  "id": "section-items-table",
+                  "type": "table",
+                  "props": {
+                    "columns": [
+                      {
+                        "align": "left",
+                        "field": "name",
+                        "header": "Plat",
+                        "width": "1.2fr"
+                      },
+                      {
+                        "align": "left",
+                        "field": "description",
+                        "header": "Description",
+                        "width": "2fr"
+                      },
+                      {
+                        "align": "right",
+                        "field": "price",
+                        "format": "money:$root.document.currency",
+                        "header": "Prix",
+                        "width": "0.6fr"
+                      }
+                    ],
+                    "rowsPath": "items",
+                    "striped": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "menu-footnote",
+      "type": "text",
+      "visibleIf": "menu.footnote",
+      "props": {
+        "align": "center",
+        "content": "{{menu.footnote}}",
+        "muted": true,
+        "size": "8pt"
+      }
+    }
+  ]
+}

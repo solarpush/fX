@@ -46,7 +46,11 @@ func main() {
 
 	// Initialiser le client IA
 	aiClient := ai.NewClient(cfg.AI)
-	log.Printf("🤖 AI client initialized (Provider: %s, Model: %s)", cfg.AI.Provider, cfg.AI.Model)
+	if cfg.AI.Provider == "cli" || cfg.AI.Provider == "agy" {
+		log.Printf("🤖 AI client initialized (Provider: %s, Command: %s, Model: %s)", cfg.AI.Provider, aiClient.CLICommandName(), cfg.AI.Model)
+	} else {
+		log.Printf("🤖 AI client initialized (Provider: %s, Model: %s)", cfg.AI.Provider, cfg.AI.Model)
+	}
 
 	// Créer le handler API
 	handler, err := api.NewHandler(store, aiClient, cfg)

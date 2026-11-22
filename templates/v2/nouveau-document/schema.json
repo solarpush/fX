@@ -1,0 +1,306 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MenuDocument",
+  "type": "object",
+  "required": [
+    "establishment",
+    "document",
+    "menu"
+  ],
+  "properties": {
+    "establishment": {
+      "type": "object",
+      "description": "Informations générales sur l'établissement.",
+      "required": [
+        "name",
+        "address"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Nom de l'établissement.",
+          "example": "Le Bistrot du Marché"
+        },
+        "category": {
+          "type": "string",
+          "description": "Type d'établissement (bistrot, brasserie, restaurant gastronomique, etc.).",
+          "example": "Bistrot traditionnel"
+        },
+        "address": {
+          "type": "string",
+          "description": "Adresse postale complète.",
+          "example": "14 Rue des Halles, 69001 Lyon"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Numéro de téléphone pour les réservations.",
+          "example": "+33 4 78 12 34 56"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Adresse e-mail de contact.",
+          "example": "contact@bistrotdumarche.fr"
+        },
+        "website": {
+          "type": "string",
+          "format": "uri",
+          "description": "Site web officiel de l'établissement.",
+          "example": "https://www.bistrotdumarche.fr"
+        },
+        "openingHours": {
+          "type": "string",
+          "description": "Horaires d'ouverture affichés sur le menu.",
+          "example": "Du mardi au dimanche, 12h00-14h30 et 19h00-22h30"
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "description": "Métadonnées du document de menu.",
+      "required": [
+        "title",
+        "date",
+        "dayOfWeek",
+        "service",
+        "status",
+        "currency"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Titre principal du menu.",
+          "example": "Menu du Jour"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Sous-titre ou accroche saisonnière.",
+          "example": "Cuisine de saison et produits locaux"
+        },
+        "reference": {
+          "type": "string",
+          "description": "Référence interne du document.",
+          "example": "MENU-2026-1122"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "BROUILLON",
+            "PUBLIE",
+            "ARCHIVE"
+          ],
+          "description": "Statut de publication du menu.",
+          "example": "PUBLIE"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date d'application du menu.",
+          "example": "2026-11-22"
+        },
+        "dayOfWeek": {
+          "type": "string",
+          "enum": [
+            "Lundi",
+            "Mardi",
+            "Mercredi",
+            "Jeudi",
+            "Vendredi",
+            "Samedi",
+            "Dimanche"
+          ],
+          "description": "Jour de la semaine correspondant au menu.",
+          "example": "Dimanche"
+        },
+        "service": {
+          "type": "string",
+          "enum": [
+            "Déjeuner",
+            "Dîner",
+            "Brunch",
+            "Journée complète"
+          ],
+          "description": "Service concerné par ce menu.",
+          "example": "Déjeuner"
+        },
+        "currency": {
+          "type": "string",
+          "enum": [
+            "EUR",
+            "CHF",
+            "CAD"
+          ],
+          "description": "Devise utilisée pour l'affichage des prix.",
+          "example": "EUR"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Mot du chef ou présentation courte.",
+          "example": "Tous nos plats sont préparés sur place à partir de produits frais du marché."
+        }
+      }
+    },
+    "menu": {
+      "type": "object",
+      "description": "Contenu détaillé de la carte et des formules.",
+      "required": [
+        "sections"
+      ],
+      "properties": {
+        "dailySpecials": {
+          "type": "array",
+          "description": "Suggestions ou plats du jour mis en avant.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "price",
+              "isAvailable"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Nom de la suggestion.",
+                "example": "Blanquette de veau à l'ancienne"
+              },
+              "description": {
+                "type": "string",
+                "description": "Accompagnements et détails de préparation.",
+                "example": "Riz basmati parfumé et légumes glacés"
+              },
+              "price": {
+                "type": "number",
+                "description": "Prix TTC.",
+                "example": 19.5
+              },
+              "isAvailable": {
+                "type": "boolean",
+                "description": "Indique si le plat est actuellement disponible.",
+                "example": true
+              }
+            }
+          }
+        },
+        "formulas": {
+          "type": "array",
+          "description": "Formules et menus à prix fixe.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "price",
+              "includedCourses"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Intitulé de la formule.",
+                "example": "Formule Bistrot"
+              },
+              "description": {
+                "type": "string",
+                "description": "Conditions ou précisions sur la formule.",
+                "example": "Servie uniquement le midi hors jours fériés"
+              },
+              "price": {
+                "type": "number",
+                "description": "Prix TTC de la formule.",
+                "example": 24
+              },
+              "includedCourses": {
+                "type": "array",
+                "description": "Liste des services inclus dans la formule.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "sections": {
+          "type": "array",
+          "description": "Catégories principales du menu (Entrées, Plats, Desserts, Boissons).",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "items"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Nom de la catégorie.",
+                "example": "Entrées"
+              },
+              "description": {
+                "type": "string",
+                "description": "Sous-titre optionnel de la catégorie.",
+                "example": "Pour bien commencer votre repas"
+              },
+              "items": {
+                "type": "array",
+                "description": "Liste des plats ou boissons de cette catégorie.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "price",
+                    "isAvailable"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Nom du plat ou de la boisson.",
+                      "example": "Velouté de potimarron aux éclats de châtaignes"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description des ingrédients et de la préparation.",
+                      "example": "Crème fraîche fermière et croûtons dorés à l'ail"
+                    },
+                    "price": {
+                      "type": "number",
+                      "description": "Prix TTC.",
+                      "example": 9.5
+                    },
+                    "isAvailable": {
+                      "type": "boolean",
+                      "description": "Disponibilité en salle.",
+                      "example": true
+                    },
+                    "dietaryTags": {
+                      "type": "array",
+                      "description": "Mentions alimentaires particulières.",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "Végétarien",
+                          "Végan",
+                          "Sans gluten",
+                          "Sans lactose",
+                          "Fait maison"
+                        ]
+                      }
+                    },
+                    "allergens": {
+                      "type": "array",
+                      "description": "Allergènes majeurs présents dans le plat.",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "footnote": {
+          "type": "string",
+          "description": "Mentions légales ou informations complémentaires en pied de page.",
+          "example": "Prix nets en euros, service compris. Liste complète des allergènes disponible sur demande."
+        }
+      }
+    }
+  }
+}

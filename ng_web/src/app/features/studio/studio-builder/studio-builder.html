@@ -68,21 +68,47 @@
       <!-- 1-Click Theme Switcher Pill + Popover -->
       @if (isBlueprintKind()) {
         <div class="popover-anchor" (click)="$event.stopPropagation()">
-          <button type="button" class="theme-trigger" (click)="toggleThemePopover()">
+          <button type="button" class="theme-trigger" [class.custom]="isCustomTheme()" (click)="toggleThemePopover()">
             <span class="mini-swatches">
               <i [style.background]="effectiveThemeColors().bg"></i>
               <i [style.background]="effectiveThemeColors().primary"></i>
               <i [style.background]="effectiveThemeColors().accent"></i>
             </span>
-            <span class="theme-lbl">{{ activeThemeInfo().name }}</span>
+            <span class="theme-lbl">{{ activeThemeDisplayName() }}</span>
+            @if (isCustomTheme()) {
+              <span class="custom-chip">✦ IA</span>
+            }
             <span class="caret">▾</span>
           </button>
 
           @if (showThemePopover()) {
             <div class="theme-popover">
-              <div class="pop-title">Thèmes Design System (@fx/ui)</div>
+              <div class="pop-title">Thème sur-mesure (IA &amp; perso)</div>
+              <button
+                type="button"
+                class="pop-theme-btn custom-card"
+                [class.active]="isCustomTheme()"
+                (click)="selectQuickTheme('custom')"
+              >
+                <span class="mini-swatches">
+                  <i [style.background]="effectiveThemeColors().bg"></i>
+                  <i [style.background]="effectiveThemeColors().primary"></i>
+                  <i [style.background]="effectiveThemeColors().accent"></i>
+                </span>
+                <span class="pt-info">
+                  <strong>✦ {{ isCustomTheme() ? activeThemeDisplayName() : 'Thème Custom (IA)' }}</strong>
+                  <small>{{ effectiveThemeColors().fontHeading }} · {{ effectiveThemeColors().fontSize }} · {{ effectiveThemeColors().radius }}</small>
+                </span>
+              </button>
+
+              <button type="button" class="pop-ai-btn" (click)="openAiEnrichTheme()">
+                ✦ Enrichir le thème avec l’IA
+              </button>
+
+              <div class="pop-divider"></div>
+              <div class="pop-title">Presets Design System (@fx/ui)</div>
               <div class="pop-presets">
-                @for (t of themes(); track t.id) {
+                @for (t of presetThemes(); track t.id) {
                   <button
                     type="button"
                     class="pop-theme-btn"
@@ -103,7 +129,7 @@
               </div>
 
               <div class="pop-divider"></div>
-              <div class="pop-title">Tokens rapides</div>
+              <div class="pop-title">Tokens rapides (Custom)</div>
               <div class="pop-tokens">
                 <label class="tok-pick">
                   <span>Primary</span>
@@ -122,23 +148,47 @@
                   />
                 </label>
                 <label class="tok-pick">
+                  <span>Fond</span>
+                  <input
+                    type="color"
+                    [ngModel]="effectiveThemeColors().bg"
+                    (ngModelChange)="setQuickToken('bg', $event)"
+                  />
+                </label>
+                <label class="tok-pick">
+                  <span>Taille</span>
+                  <select
+                    class="pop-sel"
+                    [ngModel]="effectiveThemeColors().fontSize"
+                    (ngModelChange)="setQuickToken('fontSize', $event)"
+                  >
+                    <option value="8.5pt">8.5pt</option>
+                    <option value="9.5pt">9.5pt</option>
+                    <option value="10.2pt">10.2pt</option>
+                    <option value="11pt">11pt</option>
+                    <option value="12pt">12pt</option>
+                  </select>
+                </label>
+                <label class="tok-pick">
                   <span>Rayon</span>
                   <select
                     class="pop-sel"
-                    [ngModel]="blueprint().theme.overrides?.radius || activeThemeInfo().radius"
+                    [ngModel]="effectiveThemeColors().radius"
                     (ngModelChange)="setQuickToken('radius', $event)"
                   >
                     <option value="0pt">0pt</option>
                     <option value="2pt">2pt</option>
                     <option value="4pt">4pt</option>
+                    <option value="6pt">6pt</option>
                     <option value="8pt">8pt</option>
+                    <option value="12pt">12pt</option>
                   </select>
                 </label>
                 <label class="tok-pick">
                   <span>Densité</span>
                   <select
                     class="pop-sel"
-                    [ngModel]="blueprint().theme.overrides?.density || activeThemeInfo().density"
+                    [ngModel]="effectiveThemeColors().density"
                     (ngModelChange)="setQuickToken('density', $event)"
                   >
                     <option value="compact">Compact</option>
@@ -343,6 +393,7 @@
           (duplicateBlock)="onDuplicateBlock($event)"
           (deleteBlock)="onDeleteBlock($event)"
           (themeChange)="onThemeChange($event)"
+          (enrichThemeWithAi)="openAiEnrichTheme()"
           (pageChange)="onPageChange($event)"
           (headerFooterChange)="onHeaderFooterChange($event)"
           (modulesChange)="onModulesChange($event)"

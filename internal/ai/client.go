@@ -108,6 +108,13 @@ Code Typst actuel (si existant) :
 Demande de l'utilisateur :
 %s`, req.TargetProfile, req.DataSchema, req.CurrentTypst, req.Prompt)
 
+	if c.isCLIProvider() {
+		return c.chatCompletionCLI(nil, []chatMessage{
+			{Role: "system", Text: systemPrompt},
+			{Role: "user", Text: userPrompt},
+		})
+	}
+
 	if c.config.Provider == "ollama" {
 		return c.generateOllama(systemPrompt, userPrompt)
 	}
@@ -263,6 +270,12 @@ Code Typst actuel (si existant) :
 Demande de l'utilisateur :
 %s`, req.Schema, req.CurrentTypst, req.Prompt)
 
+	if c.isCLIProvider() {
+		return c.chatCompletionCLI(nil, []chatMessage{
+			{Role: "system", Text: systemPrompt},
+			{Role: "user", Text: userPrompt},
+		})
+	}
 	if c.config.Provider == "ollama" {
 		return c.generateOllama(systemPrompt, userPrompt)
 	}

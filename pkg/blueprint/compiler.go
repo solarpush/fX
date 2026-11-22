@@ -40,6 +40,9 @@ func Compile(bp *Blueprint) (string, error) {
 	if preset == "" {
 		preset = "swiss-minimal"
 	}
+	if themeName := strings.TrimSpace(strings.ReplaceAll(bp.Theme.Name, "\n", " ")); themeName != "" {
+		sb.WriteString("// Theme: " + themeName + "\n")
+	}
 	sb.WriteString(fmt.Sprintf("#let theme = fx-theme(preset: %s, overrides: %s)\n\n",
 		typstString(preset),
 		compileThemeOverrides(bp.Theme.Overrides),
@@ -97,13 +100,26 @@ func compileThemeOverrides(ov ThemeTokens) string {
 	addColor("text", ov.Text)
 	addColor("muted", ov.Muted)
 	addColor("border", ov.Border)
+	addColor("success", ov.Success)
+	addColor("warning", ov.Warning)
+	addColor("danger", ov.Danger)
+	addColor("info", ov.Info)
 	addStr("font-heading", ov.FontHeading)
 	addStr("font-body", ov.FontBody)
 	addStr("font-mono", ov.FontMono)
+	if fs := strings.TrimSpace(ov.FontSize); fs != "" {
+		parts = append(parts, fmt.Sprintf("font-size: %s", safeTypstLength(fs, "9.5pt")))
+	}
 	if r := strings.TrimSpace(ov.Radius); r != "" {
 		parts = append(parts, fmt.Sprintf("radius: %s", safeTypstLength(r, "4pt")))
 	}
+	if bw := strings.TrimSpace(ov.BorderWidth); bw != "" {
+		parts = append(parts, fmt.Sprintf("border-width: %s", safeTypstLength(bw, "0.75pt")))
+	}
 	addStr("density", ov.Density)
+	if ov.IsDark != nil {
+		parts = append(parts, fmt.Sprintf("is-dark: %t", *ov.IsDark))
+	}
 
 	if len(parts) == 0 {
 		return "(:)"

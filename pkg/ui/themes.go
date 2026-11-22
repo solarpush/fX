@@ -7,6 +7,7 @@ type ThemePresetInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsDark      bool   `json:"isDark"`
+	IsCustom    bool   `json:"isCustom,omitempty"`
 	Bg          string `json:"bg"`
 	Surface     string `json:"surface"`
 	Text        string `json:"text"`
@@ -17,7 +18,9 @@ type ThemePresetInfo struct {
 	FontHeading string `json:"fontHeading"`
 	FontBody    string `json:"fontBody"`
 	FontMono    string `json:"fontMono"`
+	FontSize    string `json:"fontSize"`
 	Radius      string `json:"radius"`
+	BorderWidth string `json:"borderWidth"`
 	Density     string `json:"density"`
 }
 
@@ -61,6 +64,27 @@ func ValidFonts() []string {
 
 var builtInThemes = []ThemePresetInfo{
 	{
+		ID:          "custom",
+		Name:        "Custom (IA)",
+		Description: "Bespoke theme owned and incrementally enriched directly by the AI Co-pilot or custom user tokens.",
+		IsDark:      false,
+		IsCustom:    true,
+		Bg:          "#ffffff",
+		Surface:     "#f8fafc",
+		Text:        "#0f172a",
+		Muted:       "#64748b",
+		Primary:     "#6366f1",
+		Accent:      "#0ea5e9",
+		Border:      "#e2e8f0",
+		FontHeading: "Open Sans",
+		FontBody:    "Open Sans",
+		FontMono:    "Liberation Mono",
+		FontSize:    "9.5pt",
+		Radius:      "6pt",
+		BorderWidth: "0.75pt",
+		Density:     "comfortable",
+	},
+	{
 		ID:          "swiss-minimal",
 		Name:        "Swiss Minimal",
 		Description: "Crisp white canvas, deep slate typography, cobalt accent, and fine hairlines.",
@@ -75,7 +99,9 @@ var builtInThemes = []ThemePresetInfo{
 		FontHeading: "Liberation Sans",
 		FontBody:    "Liberation Sans",
 		FontMono:    "Liberation Mono",
+		FontSize:    "9.5pt",
 		Radius:      "4pt",
+		BorderWidth: "0.6pt",
 		Density:     "comfortable",
 	},
 	{
@@ -93,7 +119,9 @@ var builtInThemes = []ThemePresetInfo{
 		FontHeading: "Open Sans",
 		FontBody:    "Open Sans",
 		FontMono:    "Liberation Mono",
+		FontSize:    "9.5pt",
 		Radius:      "8pt",
+		BorderWidth: "0.75pt",
 		Density:     "comfortable",
 	},
 	{
@@ -111,7 +139,9 @@ var builtInThemes = []ThemePresetInfo{
 		FontHeading: "Liberation Serif",
 		FontBody:    "Noto Serif",
 		FontMono:    "Liberation Mono",
+		FontSize:    "10.2pt",
 		Radius:      "2pt",
+		BorderWidth: "0.6pt",
 		Density:     "relaxed",
 	},
 	{
@@ -129,7 +159,9 @@ var builtInThemes = []ThemePresetInfo{
 		FontHeading: "Noto Sans",
 		FontBody:    "Noto Sans",
 		FontMono:    "Liberation Mono",
+		FontSize:    "9.5pt",
 		Radius:      "4pt",
+		BorderWidth: "0.75pt",
 		Density:     "comfortable",
 	},
 	{
@@ -147,7 +179,9 @@ var builtInThemes = []ThemePresetInfo{
 		FontHeading: "Liberation Mono",
 		FontBody:    "Liberation Mono",
 		FontMono:    "Liberation Mono",
+		FontSize:    "8.8pt",
 		Radius:      "0pt",
+		BorderWidth: "1.5pt",
 		Density:     "compact",
 	},
 }
